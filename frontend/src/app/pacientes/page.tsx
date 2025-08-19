@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import PacienteCard from '@/components/PacienteCard'
 import NavigationArrows from '@/components/NavigationArrows'
 import PortalSection from '@/components/PortalSection'
+import CreatePacienteForm from '@/components/CreatePacienteForm'
 import { usePacientes } from '@/hooks/usePacientes'
 import { Paciente } from '@/types/paciente'
 
@@ -12,6 +13,7 @@ export default function PacientesPage() {
   const [currentPacienteIndex, setCurrentPacienteIndex] = useState(0)
   const [searchTerm, setSearchTerm] = useState('')
   const [mounted, setMounted] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
   const router = useRouter()
   const { data: pacientesData, isLoading, error } = usePacientes()
 
@@ -112,6 +114,11 @@ export default function PacientesPage() {
     // Implement search logic here
   }
 
+  const handleCreateSuccess = (newPaciente: Paciente) => {
+    // Refresh the data or add to local state
+    window.location.reload()
+  }
+
   return (
     <div className="min-h-screen bg-filemaker-gray">
       {/* Header */}
@@ -119,6 +126,12 @@ export default function PacientesPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-filemaker-header">TEOMED</h1>
           <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+            >
+              ➕ Novo Paciente
+            </button>
             <input
               type="text"
               placeholder="Buscar paciente..."
@@ -147,6 +160,14 @@ export default function PacientesPage() {
         {/* Portal Section */}
         <PortalSection pacienteId={currentPaciente._id} />
       </div>
+
+      {/* Create Patient Modal */}
+      {showCreateForm && (
+        <CreatePacienteForm
+          onClose={() => setShowCreateForm(false)}
+          onSuccess={handleCreateSuccess}
+        />
+      )}
     </div>
   )
 }
