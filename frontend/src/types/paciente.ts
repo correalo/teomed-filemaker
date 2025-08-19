@@ -1,0 +1,101 @@
+export interface Endereco {
+  completo: string;
+  cep: string;
+  normalizado: {
+    logradouro: string;
+    numero: string;
+    complemento: string;
+    bairro: string;
+    cidade: string;
+    estado: string;
+  };
+}
+
+export interface Contato {
+  telefone: string;
+  email: string;
+  celular: string;
+}
+
+export interface Convenio {
+  nome: string;
+  carteirinha: string;
+  plano: string;
+}
+
+export interface Documentos {
+  rg: string;
+  cpf: string;
+}
+
+export interface Cirurgia {
+  previa: boolean;
+  data: string;
+  local: string;
+  tratamento: string;
+  tipo: string;
+  petersenFechado: boolean;
+  tamanho_alcas: string;
+  data_segunda_cirurgia: string;
+  segunda_cirurgia: string;
+}
+
+export interface AntecedentesFamiliares {
+  dm: boolean;
+  has: boolean;
+  iam: boolean;
+  avc: boolean;
+  dislipidemia: boolean;
+  neoplasias: boolean;
+  outros: boolean;
+}
+
+export interface Antecedentes {
+  paterno: AntecedentesFamiliares;
+  materno: AntecedentesFamiliares;
+  tios: AntecedentesFamiliares;
+  avos: AntecedentesFamiliares;
+}
+
+export interface DadosClinicos {
+  peso: number;
+  altura: number;
+  imc: number;
+  alergias: string;
+  has: boolean;
+  diabetes: boolean;
+  dislipidemia: boolean;
+  apneia: boolean;
+  artropatias: boolean;
+  ccc: boolean;
+  esteatose: boolean;
+  hernia_hiato: boolean;
+  refluxo: boolean;
+  hernia_incisional: boolean;
+  tireoide: string;
+  outras_doencas: string;
+  cirurgia_previa: string;
+  cir_previa: string;
+  personalidade: string;
+  medicacoes_preop: string[];
+}
+
+export interface Paciente {
+  _id: string;
+  nome: string;
+  dataNascimento: string;
+  idade: number;
+  sexo: string;
+  dataPrimeiraConsulta: string;
+  prontuario: number;
+  indicacao: string;
+  endereco: Endereco;
+  contato: Contato;
+  convenio: Convenio;
+  documentos: Documentos;
+  cirurgia: Cirurgia;
+  antecedentes: Antecedentes;
+  dados_clinicos: DadosClinicos;
+  criadoEm: string;
+  atualizadoEm: string;
+}
