@@ -1,4 +1,8 @@
-import { useState } from "react";
+'use client'
+
+import { useState } from 'react'
+import { Paciente } from '../types/paciente'
+import { useToast } from './Toast';
 import { useRouter } from "next/navigation";
 
 type Props = {
@@ -6,7 +10,8 @@ type Props = {
 };
 
 export function BotaoDeletarPaciente({ paciente }: Props) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(false)
+  const toast = useToast();
   const [deleting, setDeleting] = useState(false);
   const router = useRouter();
 
@@ -31,32 +36,15 @@ export function BotaoDeletarPaciente({ paciente }: Props) {
       // Feche o modal e só então navegue/atualize se quiser
       setOpen(false);
 
-      // Toast de sucesso
-      const toast = document.createElement('div')
-      toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-8 py-4 rounded-lg shadow-xl z-50 text-lg font-semibold'
-      toast.textContent = '✅ Paciente deletado com sucesso!'
-      document.body.appendChild(toast)
+      toast.success('Paciente deletado com sucesso!')
       
       setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast)
-        }
         window.location.reload()
       }, 2000)
 
     } catch (e: any) {
       console.error("Erro ao deletar:", e?.message || e);
-      
-      // Toast de erro
-      const toast = document.createElement('div')
-      toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-      toast.textContent = `❌ Erro ao deletar: ${e?.message || "tente novamente"}`
-      document.body.appendChild(toast)
-      setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast)
-        }
-      }, 3000)
+      toast.error(`Erro ao deletar: ${e?.message || "tente novamente"}`);
     } finally {
       setDeleting(false);
     }

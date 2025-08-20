@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import PacienteCard from '@/components/PacienteCard'
+import PacienteCard from '../../components/PacienteCard'
 import NavigationArrows from '@/components/NavigationArrows'
 import PortalSection from '@/components/PortalSection'
 import CreatePacienteForm from '@/components/CreatePacienteForm'
+import FileMakerSlider from '@/components/FileMakerSlider'
 import { usePacientes } from '@/hooks/usePacientes'
 import { Paciente } from '@/types/paciente'
+import { ToastContainer, useToast } from '@/components/Toast'
 
 export default function PacientesPage() {
   const [currentPacienteIndex, setCurrentPacienteIndex] = useState(0)
@@ -15,7 +17,8 @@ export default function PacientesPage() {
   const [mounted, setMounted] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const router = useRouter()
-  const { data: pacientesData, isLoading, error } = usePacientes()
+  const { data, isLoading, error } = usePacientes(1, 10000)
+  const toast = useToast()
 
   useEffect(() => {
     setMounted(true)
@@ -72,7 +75,7 @@ export default function PacientesPage() {
     )
   }
 
-  if (!pacientesData?.pacientes?.length) {
+  if (!data?.pacientes?.length) {
     return (
       <div className="min-h-screen bg-filemaker-gray flex items-center justify-center">
         <div className="filemaker-card p-8 text-center">
@@ -88,7 +91,7 @@ export default function PacientesPage() {
     )
   }
 
-  const pacientes = pacientesData.pacientes
+  const pacientes = data.pacientes
   const currentPaciente = pacientes[currentPacienteIndex]
 
   const handleNext = () => {
@@ -121,39 +124,108 @@ export default function PacientesPage() {
 
   return (
     <div className="min-h-screen bg-filemaker-gray">
-      {/* Header */}
-      <div className="bg-white border-b border-filemaker-border p-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-filemaker-header">TEOMED</h1>
+      {/* Header - Responsivo */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-500 border-b border-blue-700 p-2 sm:p-4 shadow-lg">
+        {/* Desktop Layout */}
+        <div className="hidden lg:flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-            >
-              ➕ Novo Paciente
-            </button>
+            <h1 className="text-2xl font-bold text-white drop-shadow-sm">Teomed-Pacientes</h1>
+            
+            {/* Barra deslizante com setas */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPacienteIndex(prev => Math.max(0, prev - 1))}
+                disabled={currentPacienteIndex === 0}
+                className="px-3 py-2 rounded bg-white/20 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed text-white text-lg font-bold"
+                title="Paciente anterior"
+              >
+                &lt;
+              </button>
+              <FileMakerSlider
+                currentIndex={currentPacienteIndex}
+                total={pacientes.length}
+                onSlide={(index) => setCurrentPacienteIndex(index)}
+              />
+              <button
+                onClick={() => setCurrentPacienteIndex(prev => Math.min(pacientes.length - 1, prev + 1))}
+                disabled={currentPacienteIndex === pacientes.length - 1}
+                className="px-3 py-2 rounded bg-white/20 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed text-white text-lg font-bold"
+                title="Próximo paciente"
+              >
+                &gt;
+              </button>
+            </div>
             <input
               type="text"
               placeholder="Buscar paciente..."
               value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-              className="filemaker-input w-64"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/90 backdrop-blur-sm shadow-sm"
             />
-            <NavigationArrows
-              onPrevious={handlePrevious}
-              onNext={handleNext}
-              onJump={handleJump}
-              canGoPrevious={currentPacienteIndex > 0}
-              canGoNext={currentPacienteIndex < pacientes.length - 1}
-              currentIndex={currentPacienteIndex + 1}
-              total={pacientes.length}
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+            >
+              ➕ Novo Paciente
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile/Tablet Layout */}
+        <div className="lg:hidden space-y-3">
+          {/* Primeira linha: Título e botão novo */}
+          <div className="flex items-center justify-between">
+            <h1 className="text-lg sm:text-xl font-bold text-white drop-shadow-sm">Teomed-Pacientes</h1>
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all duration-200 shadow-md text-sm font-medium"
+            >
+              ➕ Novo
+            </button>
+          </div>
+          
+          {/* Segunda linha: Navegação */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPacienteIndex(prev => Math.max(0, prev - 1))}
+              disabled={currentPacienteIndex === 0}
+              className="px-2 py-1 sm:px-3 sm:py-2 rounded bg-white/20 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed text-white text-base sm:text-lg font-bold"
+              title="Paciente anterior"
+            >
+              &lt;
+            </button>
+            <div className="flex-1">
+              <FileMakerSlider
+                currentIndex={currentPacienteIndex}
+                total={pacientes.length}
+                onSlide={(index) => setCurrentPacienteIndex(index)}
+              />
+            </div>
+            <button
+              onClick={() => setCurrentPacienteIndex(prev => Math.min(pacientes.length - 1, prev + 1))}
+              disabled={currentPacienteIndex === pacientes.length - 1}
+              className="px-2 py-1 sm:px-3 sm:py-2 rounded bg-white/20 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed text-white text-base sm:text-lg font-bold"
+              title="Próximo paciente"
+            >
+              &gt;
+            </button>
+          </div>
+          
+          {/* Terceira linha: Busca */}
+          <div className="w-full">
+            <input
+              type="text"
+              placeholder="Buscar paciente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/90 backdrop-blur-sm shadow-sm text-sm"
             />
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="p-6 space-y-6">
+      {/* Main Content - Responsivo */}
+      <div className="p-2 sm:p-4 lg:p-6 space-y-4 lg:space-y-6">
         {/* Patient Card */}
         <PacienteCard paciente={currentPaciente} />
         
@@ -168,6 +240,9 @@ export default function PacientesPage() {
           onSuccess={handleCreateSuccess}
         />
       )}
+
+      {/* Toast Container */}
+      <ToastContainer messages={toast.messages} onRemove={toast.removeToast} />
     </div>
   )
 }

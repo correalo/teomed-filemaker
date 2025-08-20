@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Paciente } from '@/types/paciente'
+import { Paciente } from '../types/paciente'
+import { useToast } from './Toast'
 
 interface CreatePacienteFormProps {
   onClose: () => void
@@ -10,6 +11,7 @@ interface CreatePacienteFormProps {
 
 export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacienteFormProps) {
   const [isCreating, setIsCreating] = useState(false)
+  const toast = useToast()
   const [formData, setFormData] = useState({
     nome: '',
     dataNascimento: '',
@@ -42,11 +44,7 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
 
   const validateRequired = () => {
     if (!formData.nome || !formData.prontuario) {
-      const toast = document.createElement('div')
-      toast.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-      toast.textContent = '⚠️ Nome e Prontuário são obrigatórios'
-      document.body.appendChild(toast)
-      setTimeout(() => document.body.removeChild(toast), 4000)
+      toast.warning('Nome e Prontuário são obrigatórios', 4000)
       return false
     }
     return true
@@ -65,20 +63,15 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
         },
         body: JSON.stringify({
           ...formData,
-          idade: formData.idade ? parseInt(formData.idade) : undefined,
-          prontuario: parseInt(formData.prontuario)
+          idade: formData.idade ? parseInt(formData.idade) || 0 : undefined,
+          prontuario: formData.prontuario ? parseInt(formData.prontuario) || 0 : 0
         })
       })
 
       if (response.ok) {
         const newPaciente = await response.json()
         
-        // Toast de sucesso
-        const toast = document.createElement('div')
-        toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-        toast.textContent = '✅ Paciente criado com sucesso!'
-        document.body.appendChild(toast)
-        setTimeout(() => document.body.removeChild(toast), 3000)
+        toast.success('Paciente criado com sucesso!')
         
         onSuccess(newPaciente)
         onClose()
@@ -87,13 +80,7 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
       }
     } catch (error) {
       console.error('Erro ao criar:', error)
-      
-      // Toast de erro
-      const toast = document.createElement('div')
-      toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-      toast.textContent = '❌ Erro ao criar paciente'
-      document.body.appendChild(toast)
-      setTimeout(() => document.body.removeChild(toast), 3000)
+      toast.error('Erro ao criar paciente')
     } finally {
       setIsCreating(false)
     }

@@ -1,4 +1,4 @@
-import { useQuery } from 'react-query'
+import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import { Paciente } from '@/types/paciente'
 
@@ -35,33 +35,26 @@ interface PacientesResponse {
 }
 
 export const usePacientes = (page: number = 1, limit: number = 100) => {
-  return useQuery<PacientesResponse>(
-    ['pacientes', page, limit],
-    async () => {
+  return useQuery<PacientesResponse>({
+    queryKey: ['pacientes', page, limit],
+    queryFn: async () => {
       const response = await api.get(`/pacientes?page=${page}&limit=${limit}`)
       return response.data
     },
-    {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
-      enabled: typeof window !== 'undefined' && !!localStorage.getItem('token'),
-      retry: 1,
-      onError: (error) => {
-        console.error('Erro ao carregar pacientes:', error)
-      }
-    }
-  )
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime)
+    enabled: typeof window !== 'undefined' && !!localStorage.getItem('token'),
+    retry: 1,
+  })
 }
 
 export const usePaciente = (id: string) => {
-  return useQuery<Paciente>(
-    ['paciente', id],
-    async () => {
+  return useQuery<Paciente>({
+    queryKey: ['paciente', id],
+    queryFn: async () => {
       const response = await api.get(`/pacientes/${id}`)
       return response.data
     },
-    {
-      enabled: !!id,
-    }
-  )
+    enabled: !!id,
+  })
 }

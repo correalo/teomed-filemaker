@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from 'react-query'
+import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 
 interface PortalSectionProps {
@@ -23,29 +23,29 @@ api.interceptors.request.use((config) => {
 export default function PortalSection({ pacienteId }: PortalSectionProps) {
   const [activeTab, setActiveTab] = useState('evolucoes')
 
-  const { data: evolucoes } = useQuery(
-    ['evolucoes', pacienteId],
-    () => api.get(`/evolucoes/paciente/${pacienteId}`).then(res => res.data),
-    { enabled: activeTab === 'evolucoes' }
-  )
+  const { data: evolucoes } = useQuery({
+    queryKey: ['evolucoes', pacienteId],
+    queryFn: () => api.get(`/evolucoes/paciente/${pacienteId}`).then(res => res.data),
+    enabled: activeTab === 'evolucoes'
+  })
 
-  const { data: avaliacoes } = useQuery(
-    ['avaliacoes', pacienteId],
-    () => api.get(`/avaliacoes/paciente/${pacienteId}`).then(res => res.data),
-    { enabled: activeTab === 'avaliacoes' }
-  )
+  const { data: avaliacoes } = useQuery({
+    queryKey: ['avaliacoes', pacienteId],
+    queryFn: () => api.get(`/avaliacoes/paciente/${pacienteId}`).then(res => res.data),
+    enabled: activeTab === 'avaliacoes'
+  })
 
-  const { data: examesPreop } = useQuery(
-    ['exames-preop', pacienteId],
-    () => api.get(`/exames-preop/paciente/${pacienteId}`).then(res => res.data),
-    { enabled: activeTab === 'exames-preop' }
-  )
+  const { data: examesPreop } = useQuery({
+    queryKey: ['exames-preop', pacienteId],
+    queryFn: () => api.get(`/exames-preop/paciente/${pacienteId}`).then(res => res.data),
+    enabled: activeTab === 'exames-preop'
+  })
 
-  const { data: receitas } = useQuery(
-    ['receitas', pacienteId],
-    () => api.get(`/receitas/paciente/${pacienteId}`).then(res => res.data),
-    { enabled: activeTab === 'receitas' }
-  )
+  const { data: receitas } = useQuery({
+    queryKey: ['receitas', pacienteId],
+    queryFn: () => api.get(`/receitas/paciente/${pacienteId}`).then(res => res.data),
+    enabled: activeTab === 'receitas'
+  })
 
   const tabs = [
     { id: 'evolucoes', label: 'EVOLUÇÃO', color: 'bg-filemaker-green' },
@@ -63,7 +63,7 @@ export default function PortalSection({ pacienteId }: PortalSectionProps) {
             {evolucoes?.length > 0 ? (
               <div className="space-y-3">
                 {evolucoes.map((evolucao: any, index: number) => (
-                  <div key={index} className="filemaker-card p-4">
+                  <div key={`evolucao-${index}-${evolucao.data_retorno || index}`} className="filemaker-card p-4">
                     <div className="grid grid-cols-4 gap-4">
                       <div>
                         <label className="block text-xs font-medium text-filemaker-text mb-1">DATA</label>
@@ -112,7 +112,7 @@ export default function PortalSection({ pacienteId }: PortalSectionProps) {
             {avaliacoes?.length > 0 ? (
               <div className="space-y-3">
                 {avaliacoes.map((avaliacao: any, index: number) => (
-                  <div key={index} className="filemaker-card p-4">
+                  <div key={`avaliacao-${index}-${avaliacao.data || index}`} className="filemaker-card p-4">
                     {/* Header da Avaliação */}
                     <div className="grid grid-cols-3 gap-4 mb-4 pb-3 border-b border-gray-200">
                       <div>
@@ -137,7 +137,7 @@ export default function PortalSection({ pacienteId }: PortalSectionProps) {
                     {/* Avaliações por Especialidade */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {Object.entries(avaliacao.avaliacoes || {}).map(([especialidade, dados]: [string, any]) => (
-                        <div key={especialidade} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <div key={`esp-${especialidade}-${index}`} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                           <h4 className="text-sm font-bold mb-3 uppercase bg-filemaker-blue text-white px-2 py-1 rounded">
                             {especialidade === 'cardiologista' ? 'CARDIOLOGIA' :
                              especialidade === 'endocrinologista' ? 'ENDOCRINOLOGIA' :
@@ -252,7 +252,7 @@ export default function PortalSection({ pacienteId }: PortalSectionProps) {
             {examesPreop?.length > 0 ? (
               <div className="space-y-3">
                 {examesPreop.map((exame: any, index: number) => (
-                  <div key={index} className="filemaker-card p-4">
+                  <div key={`exame-${index}-${exame.status || index}`} className="filemaker-card p-4">
                     <div className="grid grid-cols-3 gap-4 mb-4">
                       <div>
                         <label className="block text-xs font-medium text-filemaker-text mb-1">STATUS</label>
@@ -275,7 +275,7 @@ export default function PortalSection({ pacienteId }: PortalSectionProps) {
                     
                     <div className="grid grid-cols-4 gap-3">
                       {Object.entries(exame.exames || {}).map(([tipoExame, dados]: [string, any]) => (
-                        <div key={tipoExame} className="border border-gray-200 rounded p-2">
+                        <div key={`tipo-${tipoExame}-${index}`} className="border border-gray-200 rounded p-2">
                           <h4 className="text-xs font-medium text-filemaker-header mb-1 uppercase">
                             {tipoExame}
                           </h4>
@@ -310,7 +310,7 @@ export default function PortalSection({ pacienteId }: PortalSectionProps) {
             {receitas?.length > 0 ? (
               <div className="space-y-3">
                 {receitas.map((receita: any, index: number) => (
-                  <div key={index} className="filemaker-card p-4">
+                  <div key={`receita-${index}-${receita.data_emissao || index}`} className="filemaker-card p-4">
                     <div className="grid grid-cols-3 gap-4 mb-4">
                       <div>
                         <label className="block text-xs font-medium text-filemaker-text mb-1">DATA EMISSÃO</label>
@@ -330,7 +330,7 @@ export default function PortalSection({ pacienteId }: PortalSectionProps) {
                       <label className="block text-xs font-medium text-filemaker-text mb-2">MEDICAMENTOS</label>
                       <div className="space-y-2">
                         {receita.medicamentos?.map((med: any, medIndex: number) => (
-                          <div key={medIndex} className="border border-gray-200 rounded p-3">
+                          <div key={`med-${medIndex}-${med.nome || medIndex}`} className="border border-gray-200 rounded p-3">
                             <div className="grid grid-cols-4 gap-3">
                               <div>
                                 <span className="text-xs text-filemaker-text">Nome:</span>
