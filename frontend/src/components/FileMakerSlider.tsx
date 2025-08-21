@@ -18,7 +18,9 @@ export default function FileMakerSlider({
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (!isDragging) setSliderValue(currentIndex)
+    if (!isDragging) {
+      setSliderValue(currentIndex)
+    }
   }, [currentIndex, isDragging])
 
   const max = Math.max(0, total - 1)

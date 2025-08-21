@@ -68,6 +68,8 @@ a {
   padding: 8px 12px;
   font-size: 14px;
   background: white;
+  width: 100% !important;
+  flex: none !important;
 }
 
 .filemaker-input:focus {

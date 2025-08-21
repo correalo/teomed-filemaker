@@ -216,24 +216,6 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
             className="filemaker-input w-full text-sm sm:text-base"
           />
         </div>
-        <div className="sm:col-span-2 lg:col-span-2">
-          <label className="block text-xs font-medium text-filemaker-text mb-1">PRONTUÁRIO</label>
-          <input
-            type="number"
-            value={currentData?.prontuario || ''}
-            readOnly={!isEditing}
-            onChange={(e) => handleInputChange('prontuario', e.target.value ? parseInt(e.target.value) || 0 : '')}
-            className={`filemaker-input w-full text-sm sm:text-base ${!currentData?.prontuario && isEditing ? 'border-red-500' : ''}`}
-            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
-          />
-          {isEditing && !currentData?.prontuario && (
-            <div className="text-red-500 text-xs mt-1">Campo obrigatório</div>
-          )}
-        </div>
-      </div>
-
-      {/* Address and Contact - Responsivo */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="lg:col-span-2">
           <label className="block text-xs font-medium text-filemaker-text mb-1">INDICAÇÃO</label>
           <input
@@ -245,18 +227,113 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
             style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
           />
         </div>
-        <div className="sm:col-span-2 lg:col-span-6">
-          <label className="block text-xs font-medium text-filemaker-text mb-1">ENDEREÇO</label>
+      </div>
+
+      {/* Address and Contact - Responsivo */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="sm:col-span-2 lg:col-span-4">
+          <label className="block text-xs font-medium text-filemaker-text mb-1">LOGRADOURO</label>
           <input
             type="text"
-            value={currentData?.endereco?.completo || ''}
+            value={currentData?.endereco?.normalizado?.logradouro || ''}
             readOnly={!isEditing}
-            onChange={(e) => handleInputChange('endereco.completo', e.target.value)}
+            onChange={(e) => handleInputChange('endereco.normalizado.logradouro', e.target.value)}
+            className="filemaker-input w-full text-sm sm:text-base"
+            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+          />
+        </div>
+        <div className="lg:col-span-1">
+          <label className="block text-xs font-medium text-filemaker-text mb-1">NÚMERO</label>
+          <input
+            type="text"
+            value={currentData?.endereco?.normalizado?.numero || ''}
+            readOnly={!isEditing}
+            onChange={(e) => handleInputChange('endereco.normalizado.numero', e.target.value)}
+            className="filemaker-input w-full text-sm sm:text-base"
+            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+          />
+        </div>
+        <div className="lg:col-span-1">
+          <label className="block text-xs font-medium text-filemaker-text mb-1">COMPLEMENTO</label>
+          <input
+            type="text"
+            value={''}
+            readOnly={!isEditing}
+            onChange={(e) => handleInputChange('endereco.normalizado.complemento', e.target.value)}
+            className="filemaker-input w-full text-sm sm:text-base"
+            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+          />
+        </div>
+        <div className="lg:col-span-1">
+          <label className="block text-xs font-medium text-filemaker-text mb-1">CEP</label>
+          <input
+            type="text"
+            value={currentData?.endereco?.cep || ''}
+            readOnly={!isEditing}
+            onChange={(e) => handleInputChange('endereco.cep', e.target.value)}
             className="filemaker-input w-full text-sm sm:text-base"
             style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
           />
         </div>
         <div className="lg:col-span-2">
+          <label className="block text-xs font-medium text-filemaker-text mb-1">BAIRRO</label>
+          <input
+            type="text"
+            value={(() => {
+              const complemento = currentData?.endereco?.normalizado?.complemento || '';
+              // Extrair "Vila Lais - Penha" do complemento completo
+              if (complemento.includes(' - ')) {
+                const parts = complemento.split(' - ');
+                if (parts.length >= 2) {
+                  return `${parts[0]} - ${parts[1]}`; // "Vila Lais - Penha"
+                }
+              }
+              return currentData?.endereco?.normalizado?.bairro || '';
+            })()}
+            readOnly={!isEditing}
+            onChange={(e) => handleInputChange('endereco.normalizado.bairro', e.target.value)}
+            className="filemaker-input w-full text-sm sm:text-base"
+            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+          />
+        </div>
+        <div className="lg:col-span-2">
+          <label className="block text-xs font-medium text-filemaker-text mb-1">CIDADE</label>
+          <input
+            type="text"
+            value={currentData?.endereco?.normalizado?.cidade || ''}
+            readOnly={!isEditing}
+            onChange={(e) => handleInputChange('endereco.normalizado.cidade', e.target.value)}
+            className="filemaker-input w-full text-sm sm:text-base"
+            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+          />
+        </div>
+        <div className="lg:col-span-1">
+          <label className="block text-xs font-medium text-filemaker-text mb-1">ESTADO</label>
+          <input
+            type="text"
+            value={currentData?.endereco?.normalizado?.estado || ''}
+            readOnly={!isEditing}
+            onChange={(e) => handleInputChange('endereco.normalizado.estado', e.target.value)}
+            className="filemaker-input w-full text-sm sm:text-base"
+            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+          />
+        </div>
+      </div>
+
+      {/* Contact, Insurance and Documents - Uma única linha */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="lg:col-span-1">
+          <label className="block text-xs font-medium text-filemaker-text mb-1">TELEFONE</label>
+          <input
+            type="tel"
+            value={currentData?.contato?.telefone || ''}
+            readOnly={!isEditing}
+            onChange={(e) => handleInputChange('contato.telefone', e.target.value)}
+            className="filemaker-input w-full text-sm sm:text-base"
+            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+          />
+        </div>
+        <div className="lg:col-span-1">
           <label className="block text-xs font-medium text-filemaker-text mb-1">CELULAR</label>
           <input
             type="tel"
@@ -268,7 +345,7 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
           />
         </div>
         <div className="lg:col-span-2">
-          <label className="block text-xs font-medium text-filemaker-text mb-1">Email</label>
+          <label className="block text-xs font-medium text-filemaker-text mb-1">EMAIL</label>
           <input
             type="email"
             value={currentData?.contato?.email || ''}
@@ -278,10 +355,6 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
             style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
           />
         </div>
-      </div>
-
-      {/* Insurance and Documents - Responsivo */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="lg:col-span-2">
           <label className="block text-xs font-medium text-filemaker-text mb-1">CONVÊNIO</label>
           <input
@@ -291,7 +364,7 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
             className="filemaker-input w-full text-sm sm:text-base"
           />
         </div>
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-2">
           <label className="block text-xs font-medium text-filemaker-text mb-1">CARTEIRINHA</label>
           <input
             type="text"
@@ -300,7 +373,7 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
             className="filemaker-input w-full text-sm sm:text-base"
           />
         </div>
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-1">
           <label className="block text-xs font-medium text-filemaker-text mb-1">PLANO</label>
           <input
             type="text"
@@ -309,7 +382,7 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
             className="filemaker-input w-full text-sm sm:text-base"
           />
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
           <label className="block text-xs font-medium text-filemaker-text mb-1">RG</label>
           <input
             type="text"
@@ -318,7 +391,7 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
             className="filemaker-input w-full text-sm sm:text-base"
           />
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-1">
           <label className="block text-xs font-medium text-filemaker-text mb-1">CPF</label>
           <input
             type="text"

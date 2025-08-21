@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { Paciente } from '../types/paciente'
 import { useToast } from './Toast'
+import { createPacienteSchema } from '../schemas/paciente'
+import { useFormValidation } from '../hooks/useFormValidation'
 
 interface CreatePacienteFormProps {
   onClose: () => void
@@ -12,14 +14,25 @@ interface CreatePacienteFormProps {
 export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacienteFormProps) {
   const [isCreating, setIsCreating] = useState(false)
   const toast = useToast()
+  const { validate, errors, getFieldError, hasErrors } = useFormValidation(createPacienteSchema)
   const [formData, setFormData] = useState({
     nome: '',
     dataNascimento: '',
     idade: '',
     sexo: '',
-    prontuario: '',
     indicacao: '',
-    endereco: { completo: '' },
+    endereco: { 
+      completo: '', 
+      cep: '', 
+      normalizado: { 
+        logradouro: '', 
+        numero: '', 
+        complemento: '', 
+        bairro: '', 
+        cidade: '', 
+        estado: '' 
+      } 
+    },
     contato: { telefone: '', email: '', celular: '' },
     convenio: { nome: '', carteirinha: '', plano: '' },
     documentos: { rg: '', cpf: '' }
@@ -29,7 +42,7 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
     const fieldParts = field.split('.')
     if (fieldParts.length === 1) {
       setFormData({ ...formData, [field]: value })
-    } else {
+    } else if (fieldParts.length === 2) {
       const [parentField, childField] = fieldParts
       const parentObject = formData[parentField as keyof typeof formData] || {}
       setFormData({
@@ -39,19 +52,36 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
           [childField]: value
         }
       })
+    } else if (fieldParts.length === 3) {
+      const [parentField, middleField, childField] = fieldParts
+      const parentObject = formData[parentField as keyof typeof formData] as any || {}
+      const middleObject = parentObject[middleField] || {}
+      setFormData({
+        ...formData,
+        [parentField]: {
+          ...parentObject,
+          [middleField]: {
+            ...middleObject,
+            [childField]: value
+          }
+        }
+      })
     }
-  }
-
-  const validateRequired = () => {
-    if (!formData.nome || !formData.prontuario) {
-      toast.warning('Nome e Prontuário são obrigatórios', 4000)
-      return false
-    }
-    return true
   }
 
   const handleCreate = async () => {
-    if (!validateRequired()) return
+    // Converte dados do formulário para o formato correto
+    const dataToValidate = {
+      ...formData,
+      idade: formData.idade ? parseInt(formData.idade) || undefined : undefined
+    }
+
+    // Valida os dados
+    const validation = validate(dataToValidate)
+    if (!validation.isValid) {
+      toast.error('Por favor, corrija os erros no formulário')
+      return
+    }
     
     setIsCreating(true)
     try {
@@ -61,11 +91,7 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: JSON.stringify({
-          ...formData,
-          idade: formData.idade ? parseInt(formData.idade) || 0 : undefined,
-          prontuario: formData.prontuario ? parseInt(formData.prontuario) || 0 : 0
-        })
+        body: JSON.stringify(dataToValidate)
       })
 
       if (response.ok) {
@@ -102,16 +128,27 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
         <div className="space-y-6">
           {/* Dados Básicos */}
           <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-4">
+            <div className="col-span-8">
               <label className="block text-xs font-medium text-filemaker-text mb-1">NOME *</label>
               <input
                 type="text"
                 value={formData.nome}
                 onChange={(e) => handleInputChange('nome', e.target.value)}
-                className="filemaker-input w-full font-medium"
+                className={`filemaker-input w-full font-medium ${getFieldError('nome') ? 'border-red-500' : ''}`}
                 placeholder="Nome completo"
                 required
-                style={{ borderColor: !formData.nome ? '#ef4444' : undefined }}
+              />
+              {getFieldError('nome') && (
+                <p className="text-red-500 text-xs mt-1">{getFieldError('nome')}</p>
+              )}
+            </div>
+            <div className="col-span-4">
+              <label className="block text-xs font-medium text-filemaker-text mb-1">INDICAÇÃO</label>
+              <input
+                type="text"
+                value={formData.indicacao}
+                onChange={(e) => handleInputChange('indicacao', e.target.value)}
+                className="filemaker-input w-full"
               />
             </div>
             <div className="col-span-2">
@@ -144,39 +181,84 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
                 <option value="F">F</option>
               </select>
             </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">PRONTUÁRIO *</label>
-              <input
-                type="number"
-                value={formData.prontuario}
-                onChange={(e) => handleInputChange('prontuario', e.target.value)}
-                className="filemaker-input w-full font-medium"
-                required
-                style={{ borderColor: !formData.prontuario ? '#ef4444' : undefined }}
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">INDICAÇÃO</label>
+          </div>
+
+          {/* Endereço - Uma única linha */}
+          <div className="flex gap-4 w-full">
+            <div className="flex-[4]">
+              <label className="block text-xs font-medium text-filemaker-text mb-1">LOGRADOURO</label>
               <input
                 type="text"
-                value={formData.indicacao}
-                onChange={(e) => handleInputChange('indicacao', e.target.value)}
+                value={formData.endereco.normalizado.logradouro}
+                onChange={(e) => handleInputChange('endereco.normalizado.logradouro', e.target.value)}
                 className="filemaker-input w-full"
+              />
+            </div>
+            <div className="w-16 min-w-16 max-w-16">
+              <label className="block text-xs font-medium text-filemaker-text mb-1">NÚMERO</label>
+              <input
+                type="text"
+                value={formData.endereco.normalizado.numero}
+                onChange={(e) => handleInputChange('endereco.normalizado.numero', e.target.value)}
+                className="filemaker-input w-full"
+              />
+            </div>
+            <div className="w-24 min-w-24 max-w-24">
+              <label className="block text-xs font-medium text-filemaker-text mb-1">COMPLEMENTO</label>
+              <input
+                type="text"
+                value={formData.endereco.normalizado.complemento}
+                onChange={(e) => handleInputChange('endereco.normalizado.complemento', e.target.value)}
+                className="filemaker-input w-full"
+              />
+            </div>
+            <div className="w-24 min-w-24 max-w-24 relative">
+              <label className="block text-xs font-medium text-filemaker-text mb-1">CEP</label>
+              <input
+                type="text"
+                value={formData.endereco.cep}
+                onChange={(e) => handleInputChange('endereco.cep', e.target.value)}
+                className={`filemaker-input w-full ${getFieldError('endereco.cep') ? 'border-red-500' : ''}`}
+                placeholder="00000-000"
+              />
+              {getFieldError('endereco.cep') && (
+                <p className="text-red-500 text-xs absolute top-full left-0 z-10">{getFieldError('endereco.cep')}</p>
+              )}
+            </div>
+            <div className="w-40 min-w-40 max-w-40">
+              <label className="block text-xs font-medium text-filemaker-text mb-1">BAIRRO</label>
+              <input
+                type="text"
+                value={formData.endereco.normalizado.bairro}
+                onChange={(e) => handleInputChange('endereco.normalizado.bairro', e.target.value)}
+                className="filemaker-input w-full"
+                placeholder="Bairro"
+              />
+            </div>
+            <div className="w-80 min-w-80 max-w-80">
+              <label className="block text-xs font-medium text-filemaker-text mb-1">CIDADE</label>
+              <input
+                type="text"
+                value={formData.endereco.normalizado.cidade}
+                onChange={(e) => handleInputChange('endereco.normalizado.cidade', e.target.value)}
+                className="filemaker-input w-full"
+              />
+            </div>
+            <div className="w-16 min-w-16 max-w-16">
+              <label className="block text-xs font-medium text-filemaker-text mb-1">ESTADO</label>
+              <input
+                type="text"
+                value={formData.endereco.normalizado.estado}
+                onChange={(e) => handleInputChange('endereco.normalizado.estado', e.target.value)}
+                className="filemaker-input w-full"
+                maxLength={4}
+                placeholder="SP"
               />
             </div>
           </div>
 
-          {/* Endereço e Contato */}
+          {/* Contato */}
           <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-6">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">ENDEREÇO</label>
-              <input
-                type="text"
-                value={formData.endereco.completo}
-                onChange={(e) => handleInputChange('endereco.completo', e.target.value)}
-                className="filemaker-input w-full"
-              />
-            </div>
             <div className="col-span-2">
               <label className="block text-xs font-medium text-filemaker-text mb-1">CELULAR</label>
               <input
