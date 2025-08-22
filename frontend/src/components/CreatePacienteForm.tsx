@@ -239,25 +239,33 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
                   const formattedCep = formatCep(value)
                   handleInputChange('endereco.cep', formattedCep)
                   
-                  // Se CEP está completo, busca endereço
-                  setTimeout(async () => {
-                    const addressData = await fetchAddressByCep(formattedCep)
-                    if (addressData) {
-                      setFormData(prev => ({
-                        ...prev,
-                        endereco: {
-                          ...prev.endereco,
-                          normalizado: {
-                            ...prev.endereco?.normalizado,
-                            logradouro: addressData.address || '',
-                            bairro: addressData.district,
-                            cidade: addressData.city,
-                            estado: addressData.state
-                          }
+                  // Se CEP está completo (8 dígitos), busca endereço
+                  if (formattedCep.replace(/\D/g, '').length === 8) {
+                    try {
+                      // Usar a API do ViaCEP através do proxy local
+                      const response = await fetch(`/api/viacep/${formattedCep.replace(/\D/g, '')}/json/`)
+                      if (response.ok) {
+                        const addressData = await response.json()
+                        if (addressData && !addressData.erro) {
+                          setFormData(prev => ({
+                            ...prev,
+                            endereco: {
+                              ...prev.endereco,
+                              normalizado: {
+                                ...prev.endereco?.normalizado,
+                                logradouro: addressData.logradouro || '',
+                                bairro: addressData.bairro || '',
+                                cidade: addressData.localidade || '',
+                                estado: addressData.uf || ''
+                              }
+                            }
+                          }))
                         }
-                      }))
+                      }
+                    } catch (error) {
+                      console.error('Erro ao buscar CEP:', error)
                     }
-                  }, 500)
+                  }
                 }}
                 className="filemaker-input w-full"
                 placeholder="00000-000"

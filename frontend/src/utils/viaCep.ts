@@ -68,10 +68,13 @@ export const formatCep = (value: string): string => {
   // Remove caracteres não numéricos
   const numbers = value.replace(/\D/g, '')
   
+  // Limita a 8 dígitos
+  const limitedNumbers = numbers.slice(0, 8)
+  
   // Aplica a máscara 00000-000
-  if (numbers.length <= 5) {
-    return numbers
+  if (limitedNumbers.length <= 5) {
+    return limitedNumbers
   }
   
-  return `${numbers.slice(0, 5)}-${numbers.slice(5, 8)}`
+  return `${limitedNumbers.slice(0, 5)}-${limitedNumbers.slice(5)}`
 }

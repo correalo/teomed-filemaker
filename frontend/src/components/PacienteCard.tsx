@@ -318,19 +318,43 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
             onChange={(e) => {
               const value = e.target.value
               const formattedCep = formatCep(value)
+              
+              // Atualizar o CEP imediatamente
               handleInputChange('endereco.cep', formattedCep)
               
-              // Se CEP está completo, busca endereço com debounce
-              if (formattedCep.length === 9 && isEditing) {
+              // Se CEP está completo (8 dígitos), busca endereço
+              const cleanCep = formattedCep.replace(/\D/g, '')
+              
+              if (cleanCep.length === 8 && isEditing) {
+                // Usar setTimeout maior para garantir que o input seja atualizado primeiro
                 setTimeout(async () => {
-                  const addressData = await fetchAddressByCep(formattedCep)
-                  if (addressData) {
-                    handleInputChange('endereco.normalizado.logradouro', addressData.address || '')
-                    handleInputChange('endereco.normalizado.bairro', addressData.district)
-                    handleInputChange('endereco.normalizado.cidade', addressData.city)
-                    handleInputChange('endereco.normalizado.estado', addressData.state)
+                  try {
+                    const response = await fetch(`/api/viacep/${cleanCep}/json/`)
+                    if (response.ok) {
+                      const addressData = await response.json()
+                      if (addressData && !addressData.erro) {
+                        // Atualizar apenas os campos de endereço, não o CEP
+                        if (editedPaciente) {
+                          setEditedPaciente(prev => ({
+                            ...prev!,
+                            endereco: {
+                              ...prev!.endereco,
+                              normalizado: {
+                                ...prev!.endereco?.normalizado,
+                                logradouro: addressData.logradouro || '',
+                                bairro: addressData.bairro || '',
+                                cidade: addressData.localidade || '',
+                                estado: addressData.uf || ''
+                              }
+                            }
+                          }))
+                        }
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Erro ao buscar CEP:', error)
                   }
-                }, 500)
+                }, 300)
               }
             }}
             className="filemaker-input w-full text-sm sm:text-base"
