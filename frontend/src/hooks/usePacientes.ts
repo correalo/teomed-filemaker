@@ -3,7 +3,7 @@ import axios from 'axios'
 import { Paciente } from '@/types/paciente'
 
 const api = axios.create({
-  baseURL: 'http://localhost:3001',
+  baseURL: 'http://localhost:3004',
 })
 
 api.interceptors.request.use((config) => {

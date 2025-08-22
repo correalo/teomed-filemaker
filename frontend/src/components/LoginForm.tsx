@@ -21,7 +21,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
     setError('')
 
     try {
-      const response = await axios.post('http://localhost:3001/auth/login', {
+      const response = await axios.post('http://localhost:3004/auth/login', {
         username,
         password,
       })
@@ -35,7 +35,8 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
       }
       
       onLogin()
-      router.push('/pacientes')
+      // Use window.location to avoid RSC navigation issues
+      window.location.href = '/pacientes'
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao fazer login')
     } finally {
@@ -57,6 +58,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
             onChange={(e) => setUsername(e.target.value)}
             className="filemaker-input w-full"
             placeholder="Digite seu usuário"
+            autoComplete="username"
             required
           />
         </div>
@@ -72,6 +74,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
             onChange={(e) => setPassword(e.target.value)}
             className="filemaker-input w-full"
             placeholder="Digite sua senha"
+            autoComplete="current-password"
             required
           />
         </div>

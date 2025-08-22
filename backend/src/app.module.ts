@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PacientesModule } from './pacientes/pacientes.module';
 import { AvaliacoesModule } from './avaliacoes/avaliacoes.module';
 import { EvolucoesModule } from './evolucoes/evolucoes.module';
@@ -16,6 +17,7 @@ import { AppController } from './app.controller';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
     MongooseModule.forRoot(process.env.MONGODB_URI),
     PassportModule,
     JwtModule.register({

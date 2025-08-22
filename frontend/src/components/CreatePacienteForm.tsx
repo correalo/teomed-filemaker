@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { Paciente } from '../types/paciente'
+import { createPacienteSchema } from '@/schemas/paciente'
+import { useFormValidation } from '@/hooks/useFormValidation'
 import { useToast } from './Toast'
-import { createPacienteSchema } from '../schemas/paciente'
-import { useFormValidation } from '../hooks/useFormValidation'
+import { fetchAddressByCep, formatCep } from '@/utils/viaCep'
 
 interface CreatePacienteFormProps {
   onClose: () => void
@@ -21,6 +22,7 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
     idade: '',
     sexo: '',
     indicacao: '',
+    dataPrimeiraConsulta: '',
     endereco: { 
       completo: '', 
       cep: '', 
@@ -38,10 +40,36 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
     documentos: { rg: '', cpf: '' }
   })
 
-  const handleInputChange = (field: string, value: any) => {
+  const calculateAge = (birthDate: string): number => {
+    if (!birthDate) return 0
+    const today = new Date()
+    const birth = new Date(birthDate)
+    let age = today.getFullYear() - birth.getFullYear()
+    const monthDiff = today.getMonth() - birth.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--
+    }
+    return age
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+    // Aplicar trim e maiúsculo apenas no campo nome
+    const processedValue = field === 'nome' ? value.trim().toUpperCase() : value
+    
     const fieldParts = field.split('.')
+    
     if (fieldParts.length === 1) {
-      setFormData({ ...formData, [field]: value })
+      const newFormData = {
+        ...formData,
+        [field]: processedValue
+      }
+      
+      // Se mudou a data de nascimento, calcular idade automaticamente
+      if (field === 'dataNascimento' && processedValue) {
+        newFormData.idade = calculateAge(processedValue).toString()
+      }
+      
+      setFormData(newFormData)
     } else if (fieldParts.length === 2) {
       const [parentField, childField] = fieldParts
       const parentObject = formData[parentField as keyof typeof formData] || {}
@@ -49,7 +77,7 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
         ...formData,
         [parentField]: {
           ...(typeof parentObject === 'object' ? parentObject : {}),
-          [childField]: value
+          [childField]: processedValue
         }
       })
     } else if (fieldParts.length === 3) {
@@ -62,7 +90,7 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
           ...parentObject,
           [middleField]: {
             ...middleObject,
-            [childField]: value
+            [childField]: processedValue
           }
         }
       })
@@ -77,7 +105,7 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
     }
 
     // Valida os dados
-    const validation = validate(dataToValidate)
+    const validation = await validate(dataToValidate)
     if (!validation.isValid) {
       toast.error('Por favor, corrija os erros no formulário')
       return
@@ -85,7 +113,7 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
     
     setIsCreating(true)
     try {
-      const response = await fetch('http://localhost:3001/pacientes', {
+      const response = await fetch('http://localhost:3004/pacientes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,12 +170,27 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
                 <p className="text-red-500 text-xs mt-1">{getFieldError('nome')}</p>
               )}
             </div>
-            <div className="col-span-4">
+            <div className="col-span-2">
               <label className="block text-xs font-medium text-filemaker-text mb-1">INDICAÇÃO</label>
               <input
                 type="text"
                 value={formData.indicacao}
-                onChange={(e) => handleInputChange('indicacao', e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value
+                  const capitalizedValue = value.split(' ').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                  ).join(' ')
+                  handleInputChange('indicacao', capitalizedValue)
+                }}
+                className="filemaker-input w-full"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-filemaker-text mb-1">DATA 1ª CONSULTA</label>
+              <input
+                type="date"
+                value={formData.dataPrimeiraConsulta}
+                onChange={(e) => handleInputChange('dataPrimeiraConsulta', e.target.value)}
                 className="filemaker-input w-full"
               />
             </div>
@@ -165,8 +208,9 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
               <input
                 type="number"
                 value={formData.idade}
-                onChange={(e) => handleInputChange('idade', e.target.value)}
-                className="filemaker-input w-full"
+                readOnly
+                className="filemaker-input w-full bg-gray-100"
+                placeholder="Calculada automaticamente"
               />
             </div>
             <div className="col-span-1">
@@ -185,6 +229,41 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
 
           {/* Endereço - Uma única linha */}
           <div className="flex gap-4 w-full">
+            <div className="w-32 min-w-32 max-w-32">
+              <label className="block text-xs font-medium text-filemaker-text mb-1">CEP</label>
+              <input
+                type="text"
+                value={formData.endereco.cep}
+                onChange={async (e) => {
+                  const value = e.target.value
+                  const formattedCep = formatCep(value)
+                  handleInputChange('endereco.cep', formattedCep)
+                  
+                  // Se CEP está completo, busca endereço
+                  setTimeout(async () => {
+                    const addressData = await fetchAddressByCep(formattedCep)
+                    if (addressData) {
+                      setFormData(prev => ({
+                        ...prev,
+                        endereco: {
+                          ...prev.endereco,
+                          normalizado: {
+                            ...prev.endereco?.normalizado,
+                            logradouro: addressData.address || '',
+                            bairro: addressData.district,
+                            cidade: addressData.city,
+                            estado: addressData.state
+                          }
+                        }
+                      }))
+                    }
+                  }, 500)
+                }}
+                className="filemaker-input w-full"
+                placeholder="00000-000"
+                maxLength={9}
+              />
+            </div>
             <div className="flex-[4]">
               <label className="block text-xs font-medium text-filemaker-text mb-1">LOGRADOURO</label>
               <input
@@ -212,20 +291,7 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
                 className="filemaker-input w-full"
               />
             </div>
-            <div className="w-24 min-w-24 max-w-24 relative">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">CEP</label>
-              <input
-                type="text"
-                value={formData.endereco.cep}
-                onChange={(e) => handleInputChange('endereco.cep', e.target.value)}
-                className={`filemaker-input w-full ${getFieldError('endereco.cep') ? 'border-red-500' : ''}`}
-                placeholder="00000-000"
-              />
-              {getFieldError('endereco.cep') && (
-                <p className="text-red-500 text-xs absolute top-full left-0 z-10">{getFieldError('endereco.cep')}</p>
-              )}
-            </div>
-            <div className="w-40 min-w-40 max-w-40">
+            <div className="w-32 min-w-32 max-w-32">
               <label className="block text-xs font-medium text-filemaker-text mb-1">BAIRRO</label>
               <input
                 type="text"

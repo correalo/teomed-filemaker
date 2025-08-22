@@ -1,26 +1,27 @@
 import { useState } from 'react'
-import { z } from 'zod'
+import * as yup from 'yup'
 
 interface ValidationResult {
   isValid: boolean
   errors: Record<string, string>
 }
 
-export function useFormValidation<T>(schema: z.ZodSchema<T>) {
+export function useFormValidation<T>(schema: yup.Schema<T>) {
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const validate = (data: unknown): ValidationResult => {
+  const validate = async (data: unknown): Promise<ValidationResult> => {
     try {
-      schema.parse(data)
+      await schema.validate(data, { abortEarly: false })
       setErrors({})
       return { isValid: true, errors: {} }
     } catch (error) {
-      if (error instanceof z.ZodError) {
+      if (error instanceof yup.ValidationError) {
         const fieldErrors: Record<string, string> = {}
         
-        error.issues.forEach((err: z.ZodIssue) => {
-          const path = err.path.join('.')
-          fieldErrors[path] = err.message
+        error.inner.forEach((err) => {
+          if (err.path) {
+            fieldErrors[err.path] = err.message
+          }
         })
         
         setErrors(fieldErrors)
@@ -31,11 +32,11 @@ export function useFormValidation<T>(schema: z.ZodSchema<T>) {
     }
   }
 
-  const validateField = (fieldName: string, value: unknown): string | null => {
+  const validateField = async (fieldName: string, value: unknown): Promise<string | null> => {
     try {
       // Validação simples do campo individual
       const testData = { [fieldName]: value }
-      schema.parse(testData)
+      await schema.validate(testData)
       
       // Remove erro do campo se validação passou
       setErrors(prev => {
@@ -46,8 +47,8 @@ export function useFormValidation<T>(schema: z.ZodSchema<T>) {
       
       return null
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        const errorMessage = error.issues[0]?.message || 'Campo inválido'
+      if (error instanceof yup.ValidationError) {
+        const errorMessage = error.message || 'Campo inválido'
         
         setErrors(prev => ({
           ...prev,

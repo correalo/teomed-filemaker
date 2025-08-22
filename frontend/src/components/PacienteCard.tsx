@@ -1,9 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Paciente } from '../types/paciente'
+import { formatDate } from '../utils/dateUtils'
+import { fetchAddressByCep, formatCep } from '@/utils/viaCep'
 import { BotaoDeletarPaciente } from './BotaoDeletarPaciente'
 import { useToast } from './Toast'
 
@@ -60,7 +62,7 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
     
     setIsSaving(true)
     try {
-      const response = await fetch(`http://localhost:3001/pacientes/${paciente._id}`, {
+      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -87,20 +89,56 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
     }
   }
 
+  const calculateAge = (birthDate: string): number => {
+    if (!birthDate) return 0
+    const today = new Date()
+    const birth = new Date(birthDate)
+    let age = today.getFullYear() - birth.getFullYear()
+    const monthDiff = today.getMonth() - birth.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--
+    }
+    return age
+  }
+
   const handleInputChange = (field: string, value: any) => {
     if (!editedPaciente) return
     
+    // Aplicar trim e maiúsculo apenas no campo nome
+    const processedValue = field === 'nome' ? value.trim().toUpperCase() : value
+    
     const fieldParts = field.split('.')
     if (fieldParts.length === 1) {
-      setEditedPaciente({ ...editedPaciente, [field]: value })
-    } else {
+      const newPaciente = { ...editedPaciente, [field]: processedValue }
+      
+      // Se mudou a data de nascimento, calcular idade automaticamente
+      if (field === 'dataNascimento' && processedValue) {
+        newPaciente.idade = calculateAge(processedValue)
+      }
+      
+      setEditedPaciente(newPaciente)
+    } else if (fieldParts.length === 2) {
       const [parentField, childField] = fieldParts
       const parentObject = editedPaciente[parentField as keyof Paciente] || {}
       setEditedPaciente({
         ...editedPaciente,
         [parentField]: {
           ...(typeof parentObject === 'object' ? parentObject : {}),
-          [childField]: value
+          [childField]: processedValue
+        }
+      })
+    } else if (fieldParts.length === 3) {
+      const [parentField, middleField, childField] = fieldParts
+      const parentObject = editedPaciente[parentField as keyof Paciente] || {}
+      const middleObject = (parentObject as any)?.[middleField] || {}
+      setEditedPaciente({
+        ...editedPaciente,
+        [parentField]: {
+          ...(typeof parentObject === 'object' ? parentObject : {}),
+          [middleField]: {
+            ...middleObject,
+            [childField]: processedValue
+          }
         }
       })
     }
@@ -185,11 +223,10 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
           <label className="block text-xs font-medium text-filemaker-text mb-1">IDADE</label>
           <input
             type="number"
-            value={currentData?.idade || ''}
-            readOnly={!isEditing}
-            onChange={(e) => handleInputChange('idade', e.target.value ? parseInt(e.target.value) || 0 : '')}
-            className="filemaker-input w-full text-sm sm:text-base"
-            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+            value={isEditing ? (editedPaciente?.idade || '') : (currentData?.idade || '')}
+            readOnly
+            className="filemaker-input w-full text-sm sm:text-base bg-gray-100"
+            style={{ backgroundColor: '#f9f9f9' }}
           />
         </div>
         <div className="lg:col-span-1">
@@ -210,10 +247,12 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
         <div className="lg:col-span-2">
           <label className="block text-xs font-medium text-filemaker-text mb-1">DATA 1ª CONSULTA</label>
           <input
-            type="text"
-            value={paciente?.dataPrimeiraConsulta ? formatDate(paciente.dataPrimeiraConsulta) : ''}
-            readOnly
+            type="date"
+            value={isEditing ? (editedPaciente?.dataPrimeiraConsulta || '') : (currentData?.dataPrimeiraConsulta || '')}
+            readOnly={!isEditing}
+            onChange={(e) => handleInputChange('dataPrimeiraConsulta', e.target.value)}
             className="filemaker-input w-full text-sm sm:text-base"
+            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
           />
         </div>
         <div className="lg:col-span-2">
@@ -222,7 +261,13 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
             type="text"
             value={currentData?.indicacao || ''}
             readOnly={!isEditing}
-            onChange={(e) => handleInputChange('indicacao', e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value
+              const capitalizedValue = value.split(' ').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+              ).join(' ')
+              handleInputChange('indicacao', capitalizedValue)
+            }}
             className="filemaker-input w-full text-sm sm:text-base"
             style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
           />
@@ -268,11 +313,30 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
           <label className="block text-xs font-medium text-filemaker-text mb-1">CEP</label>
           <input
             type="text"
-            value={currentData?.endereco?.cep || ''}
+            value={isEditing ? (editedPaciente?.endereco?.cep || '') : (currentData?.endereco?.cep || '')}
             readOnly={!isEditing}
-            onChange={(e) => handleInputChange('endereco.cep', e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value
+              const formattedCep = formatCep(value)
+              handleInputChange('endereco.cep', formattedCep)
+              
+              // Se CEP está completo, busca endereço com debounce
+              if (formattedCep.length === 9 && isEditing) {
+                setTimeout(async () => {
+                  const addressData = await fetchAddressByCep(formattedCep)
+                  if (addressData) {
+                    handleInputChange('endereco.normalizado.logradouro', addressData.address || '')
+                    handleInputChange('endereco.normalizado.bairro', addressData.district)
+                    handleInputChange('endereco.normalizado.cidade', addressData.city)
+                    handleInputChange('endereco.normalizado.estado', addressData.state)
+                  }
+                }, 500)
+              }
+            }}
             className="filemaker-input w-full text-sm sm:text-base"
             style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+            maxLength={9}
+            placeholder="00000-000"
           />
         </div>
         <div className="lg:col-span-2">

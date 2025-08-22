@@ -21,7 +21,7 @@ export default function Home() {
 
   const handleLogin = () => {
     setIsAuthenticated(true)
-    router.push('/pacientes')
+    // Remove router.push to let LoginForm handle navigation
   }
 
   if (isAuthenticated) {
