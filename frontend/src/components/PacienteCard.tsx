@@ -5,7 +5,12 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Paciente } from '../types/paciente'
 import { formatDate } from '../utils/dateUtils'
-import { fetchAddressByCep, formatCep } from '@/utils/viaCep'
+import { fetchAddressByCep, formatCep, formatPhone, formatCellPhone, formatRG, formatCPF, formatEmail, validateEmail } from '../utils/viaCep'
+import ConvenioSelect from './ConvenioSelect'
+import PlanoSelect from './PlanoSelect'
+import EmailInput from './EmailInput'
+import WhatsAppButton from './WhatsAppButton'
+import EmailButton from './EmailButton'
 import { BotaoDeletarPaciente } from './BotaoDeletarPaciente'
 import { useToast } from './Toast'
 
@@ -408,85 +413,148 @@ export default function PacienteCard({ paciente }: PacienteCardProps) {
         </div>
       </div>
 
-      {/* Contact, Insurance and Documents - Uma única linha */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 mb-4 sm:mb-6">
-        <div className="lg:col-span-1">
-          <label className="block text-xs font-medium text-filemaker-text mb-1">TELEFONE</label>
-          <input
-            type="tel"
-            value={currentData?.contato?.telefone || ''}
-            readOnly={!isEditing}
-            onChange={(e) => handleInputChange('contato.telefone', e.target.value)}
-            className="filemaker-input w-full text-sm sm:text-base"
-            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
-          />
+      {/* Contact, Insurance and Documents - Responsivo */}
+      <div className="space-y-4 mb-4 sm:mb-6">
+        {/* Linha 1: Contato */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+          <div>
+            <label className="block text-xs font-medium text-filemaker-text mb-1">TELEFONE</label>
+            <input
+              type="tel"
+              value={currentData?.contato?.telefone || ''}
+              readOnly={!isEditing}
+              onChange={(e) => {
+                const formattedPhone = formatPhone(e.target.value)
+                handleInputChange('contato.telefone', formattedPhone)
+              }}
+              className="filemaker-input w-full text-sm sm:text-base"
+              style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+              placeholder="(00) 0000-0000"
+              maxLength={14}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-filemaker-text mb-1">CELULAR</label>
+            <div className="relative">
+              <input
+                type="tel"
+                value={currentData?.contato?.celular || ''}
+                readOnly={!isEditing}
+                onChange={(e) => {
+                  const formattedCellPhone = formatCellPhone(e.target.value)
+                  handleInputChange('contato.celular', formattedCellPhone)
+                }}
+                className="filemaker-input w-full pr-12 text-sm sm:text-base"
+                style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+                placeholder="(00) 00000-0000"
+                maxLength={15}
+              />
+              <div className="absolute inset-y-0 right-1 flex items-center">
+                <WhatsAppButton phoneNumber={currentData?.contato?.celular || ''} />
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-filemaker-text mb-1">EMAIL</label>
+            <div className="relative">
+              <EmailInput
+                value={currentData?.contato?.email || ''}
+                onChange={(value) => handleInputChange('contato.email', value)}
+                readOnly={!isEditing}
+                className="filemaker-input w-full pr-12 text-sm sm:text-base"
+                style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+                showValidation={isEditing}
+              />
+              <div className="absolute inset-y-0 right-1 flex items-center">
+                <EmailButton email={currentData?.contato?.email || ''} />
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="lg:col-span-1">
-          <label className="block text-xs font-medium text-filemaker-text mb-1">CELULAR</label>
-          <input
-            type="tel"
-            value={currentData?.contato?.celular || ''}
-            readOnly={!isEditing}
-            onChange={(e) => handleInputChange('contato.celular', e.target.value)}
-            className="filemaker-input w-full text-sm sm:text-base"
-            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
-          />
-        </div>
-        <div className="lg:col-span-2">
-          <label className="block text-xs font-medium text-filemaker-text mb-1">EMAIL</label>
-          <input
-            type="email"
-            value={currentData?.contato?.email || ''}
-            readOnly={!isEditing}
-            onChange={(e) => handleInputChange('contato.email', e.target.value)}
-            className="filemaker-input w-full text-sm sm:text-base"
-            style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
-          />
-        </div>
-        <div className="lg:col-span-2">
-          <label className="block text-xs font-medium text-filemaker-text mb-1">CONVÊNIO</label>
-          <input
-            type="text"
-            value={paciente.convenio?.nome || ''}
-            readOnly
-            className="filemaker-input w-full text-sm sm:text-base"
-          />
-        </div>
-        <div className="lg:col-span-2">
-          <label className="block text-xs font-medium text-filemaker-text mb-1">CARTEIRINHA</label>
-          <input
-            type="text"
-            value={paciente.convenio?.carteirinha || ''}
-            readOnly
-            className="filemaker-input w-full text-sm sm:text-base"
-          />
-        </div>
-        <div className="lg:col-span-1">
-          <label className="block text-xs font-medium text-filemaker-text mb-1">PLANO</label>
-          <input
-            type="text"
-            value={paciente.convenio?.plano || ''}
-            readOnly
-            className="filemaker-input w-full text-sm sm:text-base"
-          />
-        </div>
-        <div className="lg:col-span-1">
-          <label className="block text-xs font-medium text-filemaker-text mb-1">RG</label>
-          <input
-            type="text"
-            value={paciente.documentos?.rg || ''}
-            readOnly
-            className="filemaker-input w-full text-sm sm:text-base"
-          />
-        </div>
-        <div className="lg:col-span-1">
-          <label className="block text-xs font-medium text-filemaker-text mb-1">CPF</label>
-          <input
-            type="text"
-            value={paciente.documentos?.cpf || ''}
-            readOnly
-            className="filemaker-input w-full text-sm sm:text-base"
-          />
+
+        {/* Linha 2: Convênio e Documentos */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 lg:grid-cols-12 gap-3 sm:gap-4">
+          <div className="md:col-span-2 lg:col-span-3 relative">
+            <label className="block text-xs font-medium text-filemaker-text mb-1">CONVÊNIO</label>
+            {isEditing ? (
+              <ConvenioSelect
+                value={currentData?.convenio?.nome || ''}
+                onChange={(value) => handleInputChange('convenio.nome', value)}
+                readOnly={false}
+                className="filemaker-input w-full text-sm sm:text-base"
+                style={{ backgroundColor: '#fff' }}
+              />
+            ) : (
+              <input
+                type="text"
+                value={currentData?.convenio?.nome || ''}
+                readOnly
+                className="filemaker-input w-full text-sm sm:text-base"
+                style={{ backgroundColor: '#f9f9f9' }}
+              />
+            )}
+          </div>
+          <div className="md:col-span-2 lg:col-span-3">
+            <label className="block text-xs font-medium text-filemaker-text mb-1">CARTEIRINHA</label>
+            <input
+              type="text"
+              value={paciente.convenio?.carteirinha || ''}
+              readOnly
+              className="filemaker-input w-full text-sm sm:text-base"
+            />
+          </div>
+          <div className="md:col-span-1 lg:col-span-2">
+            <label className="block text-xs font-medium text-filemaker-text mb-1">PLANO</label>
+            {isEditing ? (
+              <PlanoSelect
+                value={currentData?.convenio?.plano || ''}
+                onChange={(value) => handleInputChange('convenio.plano', value)}
+                readOnly={false}
+                className="filemaker-input w-full text-sm sm:text-base"
+                style={{ backgroundColor: '#fff' }}
+              />
+            ) : (
+              <input
+                type="text"
+                value={currentData?.convenio?.plano || ''}
+                readOnly
+                className="filemaker-input w-full text-sm sm:text-base"
+                style={{ backgroundColor: '#f9f9f9' }}
+              />
+            )}
+          </div>
+          <div className="sm:col-span-1 md:col-span-1 lg:col-span-2">
+            <label className="block text-xs font-medium text-filemaker-text mb-1">RG</label>
+            <input
+              type="text"
+              value={currentData?.documentos?.rg || ''}
+              readOnly={!isEditing}
+              onChange={(e) => {
+                const formattedRG = formatRG(e.target.value)
+                handleInputChange('documentos.rg', formattedRG)
+              }}
+              className="filemaker-input w-full text-sm sm:text-base"
+              style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+              placeholder="00.000.000-0"
+              maxLength={12}
+            />
+          </div>
+          <div className="sm:col-span-1 md:col-span-1 lg:col-span-2">
+            <label className="block text-xs font-medium text-filemaker-text mb-1">CPF</label>
+            <input
+              type="text"
+              value={currentData?.documentos?.cpf || ''}
+              readOnly={!isEditing}
+              onChange={(e) => {
+                const formattedCPF = formatCPF(e.target.value)
+                handleInputChange('documentos.cpf', formattedCPF)
+              }}
+              className="filemaker-input w-full text-sm sm:text-base"
+              style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+              placeholder="000.000.000-00"
+              maxLength={14}
+            />
+          </div>
         </div>
       </div>
 

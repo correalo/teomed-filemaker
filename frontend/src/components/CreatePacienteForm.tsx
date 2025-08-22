@@ -5,7 +5,12 @@ import { Paciente } from '../types/paciente'
 import { createPacienteSchema } from '@/schemas/paciente'
 import { useFormValidation } from '@/hooks/useFormValidation'
 import { useToast } from './Toast'
-import { fetchAddressByCep, formatCep } from '@/utils/viaCep'
+import { fetchAddressByCep, formatCep, formatPhone, formatCellPhone, formatRG, formatCPF, formatEmail, validateEmail } from '../utils/viaCep'
+import ConvenioSelect from './ConvenioSelect'
+import PlanoSelect from './PlanoSelect'
+import EmailInput from './EmailInput'
+import WhatsAppButton from './WhatsAppButton'
+import EmailButton from './EmailButton'
 
 interface CreatePacienteFormProps {
   onClose: () => void
@@ -141,264 +146,325 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-filemaker-header">Novo Paciente</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-6xl max-h-[95vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-filemaker-header">Novo Paciente</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
+            className="text-gray-500 hover:text-gray-700 text-xl sm:text-2xl"
           >
             ✕
           </button>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Dados Básicos */}
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-8">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">NOME *</label>
-              <input
-                type="text"
-                value={formData.nome}
-                onChange={(e) => handleInputChange('nome', e.target.value)}
-                className={`filemaker-input w-full font-medium ${getFieldError('nome') ? 'border-red-500' : ''}`}
-                placeholder="Nome completo"
-                required
-              />
-              {getFieldError('nome') && (
-                <p className="text-red-500 text-xs mt-1">{getFieldError('nome')}</p>
-              )}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-filemaker-text border-b pb-1">DADOS BÁSICOS</h3>
+            
+            {/* Nome - linha completa */}
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">NOME *</label>
+                <input
+                  type="text"
+                  value={formData.nome}
+                  onChange={(e) => handleInputChange('nome', e.target.value)}
+                  className={`filemaker-input w-full font-medium ${getFieldError('nome') ? 'border-red-500' : ''}`}
+                  placeholder="Nome completo"
+                  required
+                />
+                {getFieldError('nome') && (
+                  <p className="text-red-500 text-xs mt-1">{getFieldError('nome')}</p>
+                )}
+              </div>
             </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">INDICAÇÃO</label>
-              <input
-                type="text"
-                value={formData.indicacao}
-                onChange={(e) => {
-                  const value = e.target.value
-                  const capitalizedValue = value.split(' ').map(word => 
-                    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-                  ).join(' ')
-                  handleInputChange('indicacao', capitalizedValue)
-                }}
-                className="filemaker-input w-full"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">DATA 1ª CONSULTA</label>
-              <input
-                type="date"
-                value={formData.dataPrimeiraConsulta}
-                onChange={(e) => handleInputChange('dataPrimeiraConsulta', e.target.value)}
-                className="filemaker-input w-full"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">Data Nascimento</label>
-              <input
-                type="date"
-                value={formData.dataNascimento}
-                onChange={(e) => handleInputChange('dataNascimento', e.target.value)}
-                className="filemaker-input w-full"
-              />
-            </div>
-            <div className="col-span-1">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">IDADE</label>
-              <input
-                type="number"
-                value={formData.idade}
-                readOnly
-                className="filemaker-input w-full bg-gray-100"
-                placeholder="Calculada automaticamente"
-              />
-            </div>
-            <div className="col-span-1">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">SEXO</label>
-              <select
-                value={formData.sexo}
-                onChange={(e) => handleInputChange('sexo', e.target.value)}
-                className="filemaker-input w-full"
-              >
-                <option value="">Selecione</option>
-                <option value="M">M</option>
-                <option value="F">F</option>
-              </select>
+
+            {/* Linha 2: Dados pessoais */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+              <div className="lg:col-span-2">
+                <label className="block text-xs font-medium text-filemaker-text mb-1">DATA NASCIMENTO</label>
+                <input
+                  type="date"
+                  value={formData.dataNascimento}
+                  onChange={(e) => handleInputChange('dataNascimento', e.target.value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">IDADE</label>
+                <input
+                  type="number"
+                  value={formData.idade}
+                  readOnly
+                  className="filemaker-input w-full bg-gray-100"
+                  placeholder="Auto"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">SEXO</label>
+                <select
+                  value={formData.sexo}
+                  onChange={(e) => handleInputChange('sexo', e.target.value)}
+                  className="filemaker-input w-full"
+                >
+                  <option value="">Selecione</option>
+                  <option value="M">M</option>
+                  <option value="F">F</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">INDICAÇÃO</label>
+                <input
+                  type="text"
+                  value={formData.indicacao}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    const capitalizedValue = value.split(' ').map(word => 
+                      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+                    ).join(' ')
+                    handleInputChange('indicacao', capitalizedValue)
+                  }}
+                  className="filemaker-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">DATA 1ª CONSULTA</label>
+                <input
+                  type="date"
+                  value={formData.dataPrimeiraConsulta}
+                  onChange={(e) => handleInputChange('dataPrimeiraConsulta', e.target.value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Endereço - Uma única linha */}
-          <div className="flex gap-4 w-full">
-            <div className="w-32 min-w-32 max-w-32">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">CEP</label>
-              <input
-                type="text"
-                value={formData.endereco.cep}
-                onChange={async (e) => {
-                  const value = e.target.value
-                  const formattedCep = formatCep(value)
-                  handleInputChange('endereco.cep', formattedCep)
-                  
-                  // Se CEP está completo (8 dígitos), busca endereço
-                  if (formattedCep.replace(/\D/g, '').length === 8) {
-                    try {
-                      // Usar a API do ViaCEP através do proxy local
-                      const response = await fetch(`/api/viacep/${formattedCep.replace(/\D/g, '')}/json/`)
-                      if (response.ok) {
-                        const addressData = await response.json()
-                        if (addressData && !addressData.erro) {
-                          setFormData(prev => ({
-                            ...prev,
-                            endereco: {
-                              ...prev.endereco,
-                              normalizado: {
-                                ...prev.endereco?.normalizado,
-                                logradouro: addressData.logradouro || '',
-                                bairro: addressData.bairro || '',
-                                cidade: addressData.localidade || '',
-                                estado: addressData.uf || ''
+          {/* Endereço */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-filemaker-text border-b pb-1">ENDEREÇO</h3>
+            
+            {/* Linha 1: CEP e Logradouro */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
+              <div className="lg:col-span-3">
+                <label className="block text-xs font-medium text-filemaker-text mb-1">CEP</label>
+                <input
+                  type="text"
+                  value={formData.endereco.cep}
+                  onChange={async (e) => {
+                    const value = e.target.value
+                    const formattedCep = formatCep(value)
+                    handleInputChange('endereco.cep', formattedCep)
+                    
+                    // Se CEP está completo (8 dígitos), busca endereço
+                    if (formattedCep.replace(/\D/g, '').length === 8) {
+                      try {
+                        // Usar a API do ViaCEP através do proxy local
+                        const response = await fetch(`/api/viacep/${formattedCep.replace(/\D/g, '')}/json/`)
+                        if (response.ok) {
+                          const addressData = await response.json()
+                          if (addressData && !addressData.erro) {
+                            setFormData(prev => ({
+                              ...prev,
+                              endereco: {
+                                ...prev.endereco,
+                                normalizado: {
+                                  ...prev.endereco?.normalizado,
+                                  logradouro: addressData.logradouro || '',
+                                  bairro: addressData.bairro || '',
+                                  cidade: addressData.localidade || '',
+                                  estado: addressData.uf || ''
+                                }
                               }
-                            }
-                          }))
+                            }))
+                          }
                         }
+                      } catch (error) {
+                        console.error('Erro ao buscar CEP:', error)
                       }
-                    } catch (error) {
-                      console.error('Erro ao buscar CEP:', error)
                     }
-                  }
-                }}
-                className="filemaker-input w-full"
-                placeholder="00000-000"
-                maxLength={9}
-              />
+                  }}
+                  className="filemaker-input w-full"
+                  placeholder="00000-000"
+                  maxLength={9}
+                />
+              </div>
+              <div className="lg:col-span-6">
+                <label className="block text-xs font-medium text-filemaker-text mb-1">LOGRADOURO</label>
+                <input
+                  type="text"
+                  value={formData.endereco.normalizado.logradouro}
+                  onChange={(e) => handleInputChange('endereco.normalizado.logradouro', e.target.value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
+              <div className="lg:col-span-1">
+                <label className="block text-xs font-medium text-filemaker-text mb-1">NÚMERO</label>
+                <input
+                  type="text"
+                  value={formData.endereco.normalizado.numero}
+                  onChange={(e) => handleInputChange('endereco.normalizado.numero', e.target.value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
+              <div className="lg:col-span-2">
+                <label className="block text-xs font-medium text-filemaker-text mb-1">COMPLEMENTO</label>
+                <input
+                  type="text"
+                  value={formData.endereco.normalizado.complemento}
+                  onChange={(e) => handleInputChange('endereco.normalizado.complemento', e.target.value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
             </div>
-            <div className="flex-[4]">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">LOGRADOURO</label>
-              <input
-                type="text"
-                value={formData.endereco.normalizado.logradouro}
-                onChange={(e) => handleInputChange('endereco.normalizado.logradouro', e.target.value)}
-                className="filemaker-input w-full"
-              />
-            </div>
-            <div className="w-16 min-w-16 max-w-16">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">NÚMERO</label>
-              <input
-                type="text"
-                value={formData.endereco.normalizado.numero}
-                onChange={(e) => handleInputChange('endereco.normalizado.numero', e.target.value)}
-                className="filemaker-input w-full"
-              />
-            </div>
-            <div className="w-24 min-w-24 max-w-24">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">COMPLEMENTO</label>
-              <input
-                type="text"
-                value={formData.endereco.normalizado.complemento}
-                onChange={(e) => handleInputChange('endereco.normalizado.complemento', e.target.value)}
-                className="filemaker-input w-full"
-              />
-            </div>
-            <div className="w-32 min-w-32 max-w-32">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">BAIRRO</label>
-              <input
-                type="text"
-                value={formData.endereco.normalizado.bairro}
-                onChange={(e) => handleInputChange('endereco.normalizado.bairro', e.target.value)}
-                className="filemaker-input w-full"
-                placeholder="Bairro"
-              />
-            </div>
-            <div className="w-80 min-w-80 max-w-80">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">CIDADE</label>
-              <input
-                type="text"
-                value={formData.endereco.normalizado.cidade}
-                onChange={(e) => handleInputChange('endereco.normalizado.cidade', e.target.value)}
-                className="filemaker-input w-full"
-              />
-            </div>
-            <div className="w-16 min-w-16 max-w-16">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">ESTADO</label>
-              <input
-                type="text"
-                value={formData.endereco.normalizado.estado}
-                onChange={(e) => handleInputChange('endereco.normalizado.estado', e.target.value)}
-                className="filemaker-input w-full"
-                maxLength={4}
-                placeholder="SP"
-              />
+
+            {/* Linha 2: Bairro e Cidade */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">BAIRRO</label>
+                <input
+                  type="text"
+                  value={formData.endereco.normalizado.bairro}
+                  onChange={(e) => handleInputChange('endereco.normalizado.bairro', e.target.value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">CIDADE</label>
+                <input
+                  type="text"
+                  value={formData.endereco.normalizado.cidade}
+                  onChange={(e) => handleInputChange('endereco.normalizado.cidade', e.target.value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">ESTADO</label>
+                <input
+                  type="text"
+                  value={formData.endereco.normalizado.estado}
+                  onChange={(e) => handleInputChange('endereco.normalizado.estado', e.target.value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
             </div>
           </div>
 
           {/* Contato */}
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">CELULAR</label>
-              <input
-                type="tel"
-                value={formData.contato.celular}
-                onChange={(e) => handleInputChange('contato.celular', e.target.value)}
-                className="filemaker-input w-full"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">TELEFONE</label>
-              <input
-                type="tel"
-                value={formData.contato.telefone}
-                onChange={(e) => handleInputChange('contato.telefone', e.target.value)}
-                className="filemaker-input w-full"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">EMAIL</label>
-              <input
-                type="email"
-                value={formData.contato.email}
-                onChange={(e) => handleInputChange('contato.email', e.target.value)}
-                className="filemaker-input w-full"
-              />
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-filemaker-text border-b pb-1">CONTATO</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">CELULAR</label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    value={formData.contato.celular}
+                    onChange={(e) => {
+                      const formattedCellPhone = formatCellPhone(e.target.value)
+                      handleInputChange('contato.celular', formattedCellPhone)
+                    }}
+                    className="filemaker-input w-full pr-12"
+                    placeholder="(00) 00000-0000"
+                    maxLength={15}
+                  />
+                  <div className="absolute inset-y-0 right-1 flex items-center">
+                    <WhatsAppButton phoneNumber={formData.contato.celular} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">TELEFONE</label>
+                <input
+                  type="tel"
+                  value={formData.contato.telefone}
+                  onChange={(e) => {
+                    const formattedPhone = formatPhone(e.target.value)
+                    handleInputChange('contato.telefone', formattedPhone)
+                  }}
+                  className="filemaker-input w-full"
+                  placeholder="(00) 0000-0000"
+                  maxLength={14}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">EMAIL</label>
+                <div className="relative">
+                  <EmailInput
+                    value={formData.contato.email}
+                    onChange={(value) => handleInputChange('contato.email', value)}
+                    className="filemaker-input w-full pr-12"
+                    showValidation={true}
+                  />
+                  <div className="absolute inset-y-0 right-1 flex items-center">
+                    <EmailButton email={formData.contato.email} />
+                  </div>
+                  {getFieldError('contato.email') && (
+                    <p className="text-red-500 text-xs mt-1">{getFieldError('contato.email')}</p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Convênio e Documentos */}
-          <div className="grid grid-cols-12 gap-4">
-            <div className="col-span-3">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">CONVÊNIO</label>
-              <input
-                type="text"
-                value={formData.convenio.nome}
-                onChange={(e) => handleInputChange('convenio.nome', e.target.value)}
-                className="filemaker-input w-full"
-              />
-            </div>
-            <div className="col-span-3">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">CARTEIRINHA</label>
-              <input
-                type="text"
-                value={formData.convenio.carteirinha}
-                onChange={(e) => handleInputChange('convenio.carteirinha', e.target.value)}
-                className="filemaker-input w-full"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">RG</label>
-              <input
-                type="text"
-                value={formData.documentos.rg}
-                onChange={(e) => handleInputChange('documentos.rg', e.target.value)}
-                className="filemaker-input w-full"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-filemaker-text mb-1">CPF</label>
-              <input
-                type="text"
-                value={formData.documentos.cpf}
-                onChange={(e) => handleInputChange('documentos.cpf', e.target.value)}
-                className="filemaker-input w-full"
-              />
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-filemaker-text border-b pb-1">CONVÊNIO E DOCUMENTOS</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative">
+                <label className="block text-xs font-medium text-filemaker-text mb-1">CONVÊNIO</label>
+                <ConvenioSelect
+                  value={formData.convenio.nome}
+                  onChange={(value) => handleInputChange('convenio.nome', value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">CARTEIRINHA</label>
+                <input
+                  type="text"
+                  value={formData.convenio.carteirinha}
+                  onChange={(e) => handleInputChange('convenio.carteirinha', e.target.value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
+              <div className="relative">
+                <label className="block text-xs font-medium text-filemaker-text mb-1">PLANO</label>
+                <PlanoSelect
+                  value={formData.convenio.plano}
+                  onChange={(value) => handleInputChange('convenio.plano', value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">RG</label>
+                <input
+                  type="text"
+                  value={formData.documentos.rg}
+                  onChange={(e) => {
+                    const formattedRG = formatRG(e.target.value)
+                    handleInputChange('documentos.rg', formattedRG)
+                  }}
+                  className="filemaker-input w-full"
+                  placeholder="00.000.000-0"
+                  maxLength={12}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">CPF</label>
+                <input
+                  type="text"
+                  value={formData.documentos.cpf}
+                  onChange={(e) => {
+                    const formattedCPF = formatCPF(e.target.value)
+                    handleInputChange('documentos.cpf', formattedCPF)
+                  }}
+                  className="filemaker-input w-full"
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                />
+              </div>
             </div>
           </div>
         </div>

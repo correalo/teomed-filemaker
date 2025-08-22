@@ -78,3 +78,91 @@ export const formatCep = (value: string): string => {
   
   return `${limitedNumbers.slice(0, 5)}-${limitedNumbers.slice(5)}`
 }
+
+export const formatPhone = (value: string): string => {
+  // Remove caracteres não numéricos
+  const numbers = value.replace(/\D/g, '')
+  
+  // Limita a 10 dígitos para telefone fixo
+  const limitedNumbers = numbers.slice(0, 10)
+  
+  // Aplica a máscara (00) 0000-0000
+  if (limitedNumbers.length <= 2) {
+    return limitedNumbers
+  }
+  
+  if (limitedNumbers.length <= 6) {
+    return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2)}`
+  }
+  
+  return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 6)}-${limitedNumbers.slice(6)}`
+}
+
+export const formatRG = (value: string): string => {
+  // Remove caracteres não numéricos
+  const numbers = value.replace(/\D/g, '')
+  
+  // Limita a 9 dígitos para RG
+  const limitedNumbers = numbers.slice(0, 9)
+  
+  // Aplica a máscara 00.000.000-0
+  if (limitedNumbers.length <= 2) {
+    return limitedNumbers
+  }
+  
+  if (limitedNumbers.length <= 5) {
+    return `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2)}`
+  }
+  
+  if (limitedNumbers.length <= 8) {
+    return `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2, 5)}.${limitedNumbers.slice(5)}`
+  }
+  
+  return `${limitedNumbers.slice(0, 2)}.${limitedNumbers.slice(2, 5)}.${limitedNumbers.slice(5, 8)}-${limitedNumbers.slice(8)}`
+}
+
+export const formatCPF = (value: string): string => {
+  // Remove tudo que não é dígito
+  const cleanValue = value.replace(/\D/g, '')
+  
+  // Limita a 11 dígitos
+  const limitedValue = cleanValue.slice(0, 11)
+  
+  // Aplica a máscara 000.000.000-00
+  return limitedValue
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+}
+
+export const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+export const formatEmail = (value: string): string => {
+  // Remove espaços em branco no início e fim
+  const trimmedValue = value.trim()
+  
+  // Converte para minúsculas
+  return trimmedValue.toLowerCase()
+}
+
+export const formatCellPhone = (value: string): string => {
+  // Remove caracteres não numéricos
+  const numbers = value.replace(/\D/g, '')
+  
+  // Limita a 11 dígitos para celular
+  const limitedNumbers = numbers.slice(0, 11)
+  
+  // Aplica a máscara (00) 00000-0000
+  if (limitedNumbers.length <= 2) {
+    return limitedNumbers
+  }
+  
+  if (limitedNumbers.length <= 7) {
+    return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2)}`
+  }
+  
+  return `(${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 7)}-${limitedNumbers.slice(7)}`
+}
