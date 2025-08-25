@@ -16,8 +16,12 @@ export default function PacientesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [mounted, setMounted] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [isSearchMode, setIsSearchMode] = useState(false)
+  const [searchFilters, setSearchFilters] = useState<any>({})
+  const [filteredPacientes, setFilteredPacientes] = useState<Paciente[]>([])
+  const [searchFields, setSearchFields] = useState<any>({})
   const router = useRouter()
-  const { data, isLoading, error } = usePacientes(1, 10000)
+  const { data, isLoading, error } = usePacientes(1, 10000, isSearchMode ? searchFilters : undefined)
   const toast = useToast()
 
   useEffect(() => {
@@ -30,6 +34,82 @@ export default function PacientesPage() {
       }
     }
   }, [router])
+
+  // Sempre navegar para o último paciente quando os dados estiverem disponíveis
+  useEffect(() => {
+    if (data?.pacientes?.length && mounted) {
+      // Sempre ir para o último paciente da lista
+      setCurrentPacienteIndex(data.pacientes.length - 1)
+    }
+  }, [data?.pacientes, mounted])
+
+  // Salvar índice atual sempre que mudar
+  useEffect(() => {
+    if (mounted && data?.pacientes?.length) {
+      localStorage.setItem('lastPacienteIndex', currentPacienteIndex.toString())
+    }
+  }, [currentPacienteIndex, mounted, data?.pacientes])
+
+  // Debounce para busca geral
+  useEffect(() => {
+    if (!isSearchMode) return
+    
+    const timeoutId = setTimeout(() => {
+      if (searchTerm.trim()) {
+        setSearchFilters({ q: searchTerm.trim(), ...searchFields })
+      } else {
+        setSearchFilters(searchFields)
+      }
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchTerm, isSearchMode, searchFields])
+
+  // Debounce para campos de busca individuais
+  useEffect(() => {
+    if (!isSearchMode) return
+    
+    const timeoutId = setTimeout(() => {
+      const filters = { ...searchFields }
+      if (searchTerm.trim()) {
+        filters.q = searchTerm.trim()
+      }
+      setSearchFilters(filters)
+    }, 300)
+
+    return () => clearTimeout(timeoutId)
+  }, [searchFields, isSearchMode, searchTerm])
+
+  // Atualizar lista filtrada quando dados mudarem
+  useEffect(() => {
+    if (data?.pacientes) {
+      setFilteredPacientes(data.pacientes)
+      if (isSearchMode && data.pacientes.length > 0) {
+        setCurrentPacienteIndex(0) // Reset para primeiro resultado
+      }
+    }
+  }, [data?.pacientes, isSearchMode])
+
+  const toggleSearchMode = () => {
+    setIsSearchMode(!isSearchMode)
+    setSearchTerm('')
+    setSearchFilters({})
+    setSearchFields({})
+    if (!isSearchMode) {
+      // Entrando no modo busca
+      toast.info('Modo Busca ativado - Todos os campos podem ser usados para buscar')
+    } else {
+      // Saindo do modo busca
+      toast.info('Modo Busca desativado')
+    }
+  }
+
+  const handleSearchFieldChange = (field: string, value: string) => {
+    setSearchFields((prev: any) => ({
+      ...prev,
+      [field]: value || undefined
+    }))
+  }
 
   if (!mounted) {
     return (
@@ -127,12 +207,13 @@ export default function PacientesPage() {
       {/* Header - Responsivo */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-500 border-b border-blue-700 p-2 sm:p-4 shadow-lg">
         {/* Desktop Layout */}
-        <div className="hidden lg:flex items-center justify-between">
+        <div className="hidden lg:block space-y-4">
+          {/* Primeira linha: Título e barra de navegação */}
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-white drop-shadow-sm">Teomed-Pacientes</h1>
+            <h1 className="text-2xl font-bold text-white drop-shadow-sm">Teomed Pacientes</h1>
             
-            {/* Barra deslizante com setas */}
-            <div className="flex items-center gap-2">
+            {/* Barra deslizante com setas - ocupando o restante do espaço */}
+            <div className="flex items-center gap-2 flex-1">
               <button
                 onClick={() => setCurrentPacienteIndex(prev => Math.max(0, prev - 1))}
                 disabled={currentPacienteIndex === 0}
@@ -141,11 +222,13 @@ export default function PacientesPage() {
               >
                 &lt;
               </button>
-              <FileMakerSlider
-                currentIndex={currentPacienteIndex}
-                total={pacientes.length}
-                onSlide={(index) => setCurrentPacienteIndex(index)}
-              />
+              <div className="flex-1">
+                <FileMakerSlider
+                  currentIndex={currentPacienteIndex}
+                  total={pacientes.length}
+                  onSlide={(index) => setCurrentPacienteIndex(index)}
+                />
+              </div>
               <button
                 onClick={() => setCurrentPacienteIndex(prev => Math.min(pacientes.length - 1, prev + 1))}
                 disabled={currentPacienteIndex === pacientes.length - 1}
@@ -155,13 +238,27 @@ export default function PacientesPage() {
                 &gt;
               </button>
             </div>
-            <input
-              type="text"
-              placeholder="Buscar paciente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/90 backdrop-blur-sm shadow-sm"
-            />
+          </div>
+          
+          {/* Segunda linha: Busca e botões */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-1">
+              <button
+                onClick={toggleSearchMode}
+                className={`px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium ${
+                  isSearchMode 
+                    ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {isSearchMode ? '🔍 Sair Busca' : '🔍 Modo Busca'}
+              </button>
+              {isSearchMode && (
+                <div className="text-sm text-orange-700 font-medium">
+                  {data?.total || 0} resultado(s)
+                </div>
+              )}
+            </div>
             <button
               onClick={() => setShowCreateForm(true)}
               className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
@@ -173,15 +270,27 @@ export default function PacientesPage() {
 
         {/* Mobile/Tablet Layout */}
         <div className="lg:hidden space-y-3">
-          {/* Primeira linha: Título e botão novo */}
-          <div className="flex items-center justify-between">
-            <h1 className="text-lg sm:text-xl font-bold text-white drop-shadow-sm">Teomed-Pacientes</h1>
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all duration-200 shadow-md text-sm font-medium"
-            >
-              ➕ Novo
-            </button>
+          {/* Primeira linha: Título e botões */}
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-lg sm:text-xl font-bold text-white drop-shadow-sm">Teomed Pacientes</h1>
+            <div className="flex gap-2">
+              <button
+                onClick={toggleSearchMode}
+                className={`px-2 py-1 sm:px-3 sm:py-2 rounded-lg transition-all duration-200 shadow-md text-xs sm:text-sm font-medium ${
+                  isSearchMode 
+                    ? 'bg-orange-600 text-white hover:bg-orange-700' 
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {isSearchMode ? '🔍' : '🔍'}
+              </button>
+              <button
+                onClick={() => setShowCreateForm(true)}
+                className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all duration-200 shadow-md text-sm font-medium"
+              >
+                ➕ Novo
+              </button>
+            </div>
           </div>
           
           {/* Segunda linha: Navegação */}
@@ -211,26 +320,34 @@ export default function PacientesPage() {
             </button>
           </div>
           
-          {/* Terceira linha: Busca */}
-          <div className="w-full">
-            <input
-              type="text"
-              placeholder="Buscar paciente..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent bg-white/90 backdrop-blur-sm shadow-sm text-sm"
-            />
-          </div>
+          {/* Terceira linha: Contador de resultados */}
+          {isSearchMode && (
+            <div className="w-full flex justify-center">
+              <div className="text-xs text-orange-200 font-medium">
+                {data?.total || 0} resultado(s)
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Main Content - Responsivo */}
       <div className="p-2 sm:p-4 lg:p-6 space-y-4 lg:space-y-6">
         {/* Patient Card */}
-        <PacienteCard paciente={currentPaciente} />
+        <PacienteCard 
+          paciente={currentPaciente} 
+          isSearchMode={isSearchMode}
+          searchFields={searchFields}
+          onSearchFieldChange={handleSearchFieldChange}
+        />
         
         {/* Portal Section */}
-        <PortalSection pacienteId={currentPaciente._id} />
+        <PortalSection 
+          pacienteId={currentPaciente._id} 
+          isSearchMode={isSearchMode}
+          searchFields={searchFields}
+          onSearchFieldChange={handleSearchFieldChange}
+        />
       </div>
 
       {/* Create Patient Modal */}

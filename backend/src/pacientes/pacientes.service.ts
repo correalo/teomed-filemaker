@@ -10,11 +10,13 @@ export class PacientesService {
     @InjectModel(Paciente.name) private pacienteModel: Model<PacienteDocument>,
   ) {}
 
-  async findAll(page: number = 1, limit: number = 10): Promise<{ pacientes: Paciente[]; total: number; totalPages: number }> {
+  async findAll(page: number = 1, limit: number = 10, filters?: any): Promise<{ pacientes: Paciente[]; total: number; totalPages: number }> {
     const skip = (page - 1) * limit;
+    const query = this.buildSearchQuery(filters);
+    
     const [pacientes, total] = await Promise.all([
-      this.pacienteModel.find().skip(skip).limit(limit).exec(),
-      this.pacienteModel.countDocuments().exec(),
+      this.pacienteModel.find(query).skip(skip).limit(limit).exec(),
+      this.pacienteModel.countDocuments(query).exec(),
     ]);
     
     return {
@@ -22,6 +24,113 @@ export class PacientesService {
       total,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  private buildSearchQuery(filters?: any): any {
+    if (!filters) return {};
+    
+    const query: any = {};
+    const andConditions: any[] = [];
+
+    // Busca geral em todos os campos (q)
+    if (filters.searchQuery && filters.searchQuery.trim()) {
+      const searchRegex = new RegExp(filters.searchQuery.trim(), 'i');
+      const searchConditions: any[] = [
+        { nome: searchRegex },
+        { 'documentos.cpf': searchRegex },
+        { 'documentos.rg': searchRegex },
+        { 'contato.email': searchRegex },
+        { 'contato.telefone': searchRegex },
+        { 'contato.celular': searchRegex },
+        { 'endereco.normalizado.logradouro': searchRegex },
+        { 'endereco.normalizado.bairro': searchRegex },
+        { 'endereco.normalizado.cidade': searchRegex },
+        { 'endereco.normalizado.estado': searchRegex },
+        { 'endereco.cep': searchRegex },
+        { 'convenio.nome': searchRegex },
+        { 'convenio.plano': searchRegex },
+        { 'convenio.carteirinha': searchRegex },
+      ];
+
+      // Se for número, buscar também por prontuario e idade
+      if (!isNaN(Number(filters.searchQuery))) {
+        searchConditions.push({ prontuario: Number(filters.searchQuery) });
+        searchConditions.push({ idade: Number(filters.searchQuery) });
+      }
+
+      andConditions.push({ $or: searchConditions });
+    }
+
+    // Filtros específicos por campo
+    if (filters.nome) {
+      andConditions.push({ nome: new RegExp(filters.nome, 'i') });
+    }
+    
+    if (filters.cpf) {
+      andConditions.push({ 'documentos.cpf': new RegExp(filters.cpf.replace(/\D/g, ''), 'i') });
+    }
+    
+    if (filters.rg) {
+      andConditions.push({ 'documentos.rg': new RegExp(filters.rg, 'i') });
+    }
+    
+    if (filters.prontuario) {
+      andConditions.push({ prontuario: Number(filters.prontuario) });
+    }
+    
+    if (filters.sexo) {
+      andConditions.push({ sexo: filters.sexo });
+    }
+    
+    if (filters.convenio) {
+      andConditions.push({ 'convenio.nome': new RegExp(filters.convenio, 'i') });
+    }
+    
+    if (filters.email) {
+      andConditions.push({ 'contato.email': new RegExp(filters.email, 'i') });
+    }
+    
+    if (filters.telefone) {
+      andConditions.push({ 'contato.telefone': new RegExp(filters.telefone, 'i') });
+    }
+    
+    if (filters.celular) {
+      andConditions.push({ 'contato.celular': new RegExp(filters.celular, 'i') });
+    }
+    
+    if (filters.cidade) {
+      andConditions.push({ 'endereco.normalizado.cidade': new RegExp(filters.cidade, 'i') });
+    }
+    
+    if (filters.estado) {
+      andConditions.push({ 'endereco.normalizado.estado': new RegExp(filters.estado, 'i') });
+    }
+    
+    if (filters.carteirinha) {
+      andConditions.push({ 'convenio.carteirinha': new RegExp(filters.carteirinha, 'i') });
+    }
+    
+    if (filters.plano) {
+      andConditions.push({ 'convenio.plano': new RegExp(filters.plano, 'i') });
+    }
+    
+    if (filters.idade) {
+      andConditions.push({ idade: Number(filters.idade) });
+    }
+    
+    if (filters.indicacao) {
+      andConditions.push({ indicacao: new RegExp(filters.indicacao, 'i') });
+    }
+    
+    if (filters.dataPrimeiraConsulta) {
+      andConditions.push({ dataPrimeiraConsulta: filters.dataPrimeiraConsulta });
+    }
+
+    if (andConditions.length > 0) {
+      query.$and = andConditions;
+    }
+
+    return query;
   }
 
   async findOne(id: string): Promise<Paciente> {

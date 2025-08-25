@@ -69,7 +69,7 @@ export default function FileMakerSlider({
       </div>
 
       {/* Barra deslizante responsiva */}
-      <div className="flex-1 relative min-w-[80px] max-w-[200px]">
+      <div className="flex-1 relative min-w-[80px]">
         <input
           ref={inputRef}
           type="range"

@@ -13,8 +13,38 @@ export class PacientesController {
   }
 
   @Get()
-  findAll(@Query('page') page: string = '1', @Query('limit') limit: string = '10') {
-    return this.pacientesService.findAll(+page, +limit);
+  findAll(
+    @Query('page') page: string = '1', 
+    @Query('limit') limit: string = '10',
+    @Query('q') searchQuery?: string,
+    @Query('nome') nome?: string,
+    @Query('cpf') cpf?: string,
+    @Query('rg') rg?: string,
+    @Query('prontuario') prontuario?: string,
+    @Query('sexo') sexo?: string,
+    @Query('convenio') convenio?: string,
+    @Query('email') email?: string,
+    @Query('telefone') telefone?: string,
+    @Query('celular') celular?: string,
+    @Query('cidade') cidade?: string,
+    @Query('estado') estado?: string
+  ) {
+    const filters = {
+      searchQuery,
+      nome,
+      cpf,
+      rg,
+      prontuario,
+      sexo,
+      convenio,
+      email,
+      telefone,
+      celular,
+      cidade,
+      estado
+    };
+    
+    return this.pacientesService.findAll(+page, +limit, filters);
   }
 
   @Get('search')

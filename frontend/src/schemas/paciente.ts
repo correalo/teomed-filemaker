@@ -1,4 +1,5 @@
 import * as yup from 'yup'
+import { isValidCPF } from '../utils/viaCep'
 
 // Schema para endereço
 export const enderecoSchema = yup.object({
@@ -44,6 +45,10 @@ export const documentosSchema = yup.object({
   rg: yup.string().optional(),
   cpf: yup.string()
     .matches(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, 'CPF deve ter formato 000.000.000-00')
+    .test('cpf-valid', 'CPF inválido', function(value) {
+      if (!value || value.trim() === '') return true // Empty is valid (optional field)
+      return isValidCPF(value)
+    })
     .optional()
 }).required()
 

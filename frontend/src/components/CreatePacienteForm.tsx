@@ -5,12 +5,13 @@ import { Paciente } from '../types/paciente'
 import { createPacienteSchema } from '@/schemas/paciente'
 import { useFormValidation } from '@/hooks/useFormValidation'
 import { useToast } from './Toast'
-import { fetchAddressByCep, formatCep, formatPhone, formatCellPhone, formatRG, formatCPF, formatEmail, validateEmail } from '../utils/viaCep'
+import { fetchAddressByCep, formatCep, formatPhone, formatCellPhone, formatRG, formatCPF, formatEmail, validateEmail, validateAndFormatCPF } from '../utils/viaCep'
 import ConvenioSelect from './ConvenioSelect'
 import PlanoSelect from './PlanoSelect'
 import EmailInput from './EmailInput'
 import WhatsAppButton from './WhatsAppButton'
 import EmailButton from './EmailButton'
+import CPFInput from './CPFInput'
 
 interface CreatePacienteFormProps {
   onClose: () => void
@@ -453,17 +454,15 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
               </div>
               <div>
                 <label className="block text-xs font-medium text-filemaker-text mb-1">CPF</label>
-                <input
-                  type="text"
+                <CPFInput
                   value={formData.documentos.cpf}
-                  onChange={(e) => {
-                    const formattedCPF = formatCPF(e.target.value)
-                    handleInputChange('documentos.cpf', formattedCPF)
-                  }}
+                  onChange={(value) => handleInputChange('documentos.cpf', value)}
                   className="filemaker-input w-full"
-                  placeholder="000.000.000-00"
-                  maxLength={14}
+                  showValidation={true}
                 />
+                {getFieldError('documentos.cpf') && (
+                  <p className="text-red-500 text-xs mt-1">{getFieldError('documentos.cpf')}</p>
+                )}
               </div>
             </div>
           </div>

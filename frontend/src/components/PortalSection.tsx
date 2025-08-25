@@ -6,6 +6,9 @@ import axios from 'axios'
 
 interface PortalSectionProps {
   pacienteId: string
+  isSearchMode?: boolean
+  searchFields?: any
+  onSearchFieldChange?: (field: string, value: string) => void
 }
 
 const api = axios.create({
@@ -20,7 +23,7 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-export default function PortalSection({ pacienteId }: PortalSectionProps) {
+export default function PortalSection({ pacienteId, isSearchMode = false, searchFields = {}, onSearchFieldChange }: PortalSectionProps) {
   const [activeTab, setActiveTab] = useState('evolucoes')
 
   const { data: evolucoes } = useQuery({
@@ -370,28 +373,328 @@ export default function PortalSection({ pacienteId }: PortalSectionProps) {
   }
 
   return (
-    <div className="filemaker-card">
-      {/* Tabs */}
-      <div className="flex border-b border-filemaker-border">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.id
-                ? `${tab.color} text-white border-transparent`
-                : 'text-filemaker-text hover:text-filemaker-header border-transparent hover:border-filemaker-border'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+    <div className="space-y-4">
+      {/* Clinical Cards - Always visible in search mode */}
+      {isSearchMode && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Avaliação Clínica */}
+          <div className="filemaker-card p-4">
+            <h3 className="text-sm font-bold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">
+              AVALIAÇÃO CLÍNICA
+            </h3>
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-filemaker-text mb-1">PESO</label>
+                  <input
+                    type="number"
+                    value={searchFields.peso || ''}
+                    onChange={(e) => onSearchFieldChange?.('peso', e.target.value)}
+                    className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                    style={{ backgroundColor: '#fef3e2' }}
+                    placeholder="120.3"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-filemaker-text mb-1">ALTURA</label>
+                  <input
+                    type="number"
+                    value={searchFields.altura || ''}
+                    onChange={(e) => onSearchFieldChange?.('altura', e.target.value)}
+                    className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                    style={{ backgroundColor: '#fef3e2' }}
+                    placeholder="1.63"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-filemaker-text mb-1">IMC</label>
+                  <input
+                    type="number"
+                    value={searchFields.imc || ''}
+                    onChange={(e) => onSearchFieldChange?.('imc', e.target.value)}
+                    className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                    style={{ backgroundColor: '#fef3e2' }}
+                    placeholder="45.28"
+                  />
+                </div>
+              </div>
+              
+              {/* Checkboxes - Primeira coluna */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="has"
+                      checked={searchFields.has || false}
+                      onChange={(e) => onSearchFieldChange?.('has', e.target.checked.toString())}
+                      className="w-4 h-4 text-orange-600 bg-orange-50 border-orange-300 rounded focus:ring-orange-500"
+                    />
+                    <label htmlFor="has" className="text-xs text-filemaker-text">HAS</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="dislipidemia"
+                      checked={searchFields.dislipidemia || false}
+                      onChange={(e) => onSearchFieldChange?.('dislipidemia', e.target.checked.toString())}
+                      className="w-4 h-4 text-orange-600 bg-orange-50 border-orange-300 rounded focus:ring-orange-500"
+                    />
+                    <label htmlFor="dislipidemia" className="text-xs text-filemaker-text">DISLIPIDEMIA</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="artropatias"
+                      checked={searchFields.artropatias || false}
+                      onChange={(e) => onSearchFieldChange?.('artropatias', e.target.checked.toString())}
+                      className="w-4 h-4 text-orange-600 bg-orange-50 border-orange-300 rounded focus:ring-orange-500"
+                    />
+                    <label htmlFor="artropatias" className="text-xs text-filemaker-text">ARTROPATIAS</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="esteatose"
+                      checked={searchFields.esteatose || false}
+                      onChange={(e) => onSearchFieldChange?.('esteatose', e.target.checked.toString())}
+                      className="w-4 h-4 text-orange-600 bg-orange-50 border-orange-300 rounded focus:ring-orange-500"
+                    />
+                    <label htmlFor="esteatose" className="text-xs text-filemaker-text">ESTEATOSE</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="refluxo"
+                      checked={searchFields.refluxo || false}
+                      onChange={(e) => onSearchFieldChange?.('refluxo', e.target.checked.toString())}
+                      className="w-4 h-4 text-orange-600 bg-orange-50 border-orange-300 rounded focus:ring-orange-500"
+                    />
+                    <label htmlFor="refluxo" className="text-xs text-filemaker-text">REFLUXO</label>
+                  </div>
+                </div>
+                
+                {/* Checkboxes - Segunda coluna */}
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="diabetes"
+                      checked={searchFields.diabetes || false}
+                      onChange={(e) => onSearchFieldChange?.('diabetes', e.target.checked.toString())}
+                      className="w-4 h-4 text-orange-600 bg-orange-50 border-orange-300 rounded focus:ring-orange-500"
+                    />
+                    <label htmlFor="diabetes" className="text-xs text-filemaker-text">DIABETES</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="anemia"
+                      checked={searchFields.anemia || false}
+                      onChange={(e) => onSearchFieldChange?.('anemia', e.target.checked.toString())}
+                      className="w-4 h-4 text-orange-600 bg-orange-50 border-orange-300 rounded focus:ring-orange-500"
+                    />
+                    <label htmlFor="anemia" className="text-xs text-filemaker-text">ANEMIA</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="ccc"
+                      checked={searchFields.ccc || false}
+                      onChange={(e) => onSearchFieldChange?.('ccc', e.target.checked.toString())}
+                      className="w-4 h-4 text-orange-600 bg-orange-50 border-orange-300 rounded focus:ring-orange-500"
+                    />
+                    <label htmlFor="ccc" className="text-xs text-filemaker-text">CCC</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="hernia_hiato"
+                      checked={searchFields.hernia_hiato || false}
+                      onChange={(e) => onSearchFieldChange?.('hernia_hiato', e.target.checked.toString())}
+                      className="w-4 h-4 text-orange-600 bg-orange-50 border-orange-300 rounded focus:ring-orange-500"
+                    />
+                    <label htmlFor="hernia_hiato" className="text-xs text-filemaker-text">HÉRNIA DE HIATO</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="hernia_incisional"
+                      checked={searchFields.hernia_incisional || false}
+                      onChange={(e) => onSearchFieldChange?.('hernia_incisional', e.target.checked.toString())}
+                      className="w-4 h-4 text-orange-600 bg-orange-50 border-orange-300 rounded focus:ring-orange-500"
+                    />
+                    <label htmlFor="hernia_incisional" className="text-xs text-filemaker-text">HÉRNIA INCISIONAL</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-      {/* Content */}
-      <div className="p-6">
-        {renderContent()}
-      </div>
+          {/* Antecedentes */}
+          <div className="filemaker-card p-4">
+            <h3 className="text-sm font-bold mb-3 bg-filemaker-green text-white px-2 py-1 rounded">
+              ANTECEDENTES
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">ANTECEDENTE PATERNO</label>
+                <input
+                  type="text"
+                  value={searchFields.antecedente_paterno || ''}
+                  onChange={(e) => onSearchFieldChange?.('antecedente_paterno', e.target.value)}
+                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                  style={{ backgroundColor: '#fef3e2' }}
+                  placeholder="Buscar antecedente paterno..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">ANTECEDENTE MATERNO</label>
+                <input
+                  type="text"
+                  value={searchFields.antecedente_materno || ''}
+                  onChange={(e) => onSearchFieldChange?.('antecedente_materno', e.target.value)}
+                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                  style={{ backgroundColor: '#fef3e2' }}
+                  placeholder="Buscar antecedente materno..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">ANTECEDENTE TIOS</label>
+                <input
+                  type="text"
+                  value={searchFields.antecedente_tios || ''}
+                  onChange={(e) => onSearchFieldChange?.('antecedente_tios', e.target.value)}
+                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                  style={{ backgroundColor: '#fef3e2' }}
+                  placeholder="Buscar antecedente tios..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">ANTECEDENTE AVÓS</label>
+                <input
+                  type="text"
+                  value={searchFields.antecedente_avos || ''}
+                  onChange={(e) => onSearchFieldChange?.('antecedente_avos', e.target.value)}
+                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                  style={{ backgroundColor: '#fef3e2' }}
+                  placeholder="Buscar antecedente avós..."
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Medicamentos Pré-Op */}
+          <div className="filemaker-card p-4">
+            <h3 className="text-sm font-bold mb-3 bg-filemaker-orange text-white px-2 py-1 rounded">
+              MEDICAMENTOS PRÉ-OP
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">MEDICAMENTO</label>
+                <input
+                  type="text"
+                  value={searchFields.medicamento_preop || ''}
+                  onChange={(e) => onSearchFieldChange?.('medicamento_preop', e.target.value)}
+                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                  style={{ backgroundColor: '#fef3e2' }}
+                  placeholder="Buscar medicamento..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">DOSAGEM</label>
+                <input
+                  type="text"
+                  value={searchFields.dosagem_preop || ''}
+                  onChange={(e) => onSearchFieldChange?.('dosagem_preop', e.target.value)}
+                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                  style={{ backgroundColor: '#fef3e2' }}
+                  placeholder="Buscar dosagem..."
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Tratamentos */}
+          <div className="filemaker-card p-4">
+            <h3 className="text-sm font-bold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">
+              TRATAMENTOS
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">CIRURGIA PRÉVIA</label>
+                <input
+                  type="text"
+                  value={searchFields.cirurgia_previa || ''}
+                  onChange={(e) => onSearchFieldChange?.('cirurgia_previa', e.target.value)}
+                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                  style={{ backgroundColor: '#fef3e2' }}
+                  placeholder="Buscar cirurgia prévia..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">DATA</label>
+                <input
+                  type="date"
+                  value={searchFields.data_cirurgia || ''}
+                  onChange={(e) => onSearchFieldChange?.('data_cirurgia', e.target.value)}
+                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                  style={{ backgroundColor: '#fef3e2' }}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">LOCAL</label>
+                <input
+                  type="text"
+                  value={searchFields.local_cirurgia || ''}
+                  onChange={(e) => onSearchFieldChange?.('local_cirurgia', e.target.value)}
+                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                  style={{ backgroundColor: '#fef3e2' }}
+                  placeholder="Buscar local..."
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">TRATAMENTO</label>
+                <input
+                  type="text"
+                  value={searchFields.tratamento || ''}
+                  onChange={(e) => onSearchFieldChange?.('tratamento', e.target.value)}
+                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                  style={{ backgroundColor: '#fef3e2' }}
+                  placeholder="Buscar tratamento..."
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Original Portal Section - Hidden in search mode */}
+      {!isSearchMode && (
+        <div className="filemaker-card">
+          {/* Tabs */}
+          <div className="flex border-b border-filemaker-border">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === tab.id
+                    ? `${tab.color} text-white border-transparent`
+                    : 'text-filemaker-text hover:text-filemaker-header border-transparent hover:border-filemaker-border'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
+          <div className="p-6">
+            {renderContent()}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

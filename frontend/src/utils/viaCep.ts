@@ -135,17 +135,78 @@ export const formatCPF = (value: string): string => {
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
 }
 
-export const validateEmail = (email: string): boolean => {
+export function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
 }
 
-export const formatEmail = (value: string): string => {
-  // Remove espaços em branco no início e fim
-  const trimmedValue = value.trim()
+export function formatEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
+/**
+ * Validates CPF using the official algorithm (check digits verification)
+ * @param input CPF string with or without formatting
+ * @returns true if CPF is valid, false otherwise
+ */
+export function isValidCPF(input: string): boolean {
+  if (!input || typeof input !== 'string') return false
   
-  // Converte para minúsculas
-  return trimmedValue.toLowerCase()
+  // Extract only digits
+  const nums = (input.match(/\d/g) || []).map(Number)
+  if (nums.length !== 11) return false
+
+  // Reject sequences with all same digits (000.000.000-00, 111.111.111-11, etc.)
+  if (new Set(nums).size === 1) return false
+
+  /**
+   * Calculate verification digit
+   * @param slice Array of digits to calculate
+   * @param startWeight Starting weight for multiplication
+   * @returns Calculated verification digit
+   */
+  const calcVerificationDigit = (slice: number[], startWeight: number): number => {
+    const sum = slice.reduce((acc, digit, index) => acc + digit * (startWeight - index), 0)
+    const remainder = sum % 11
+    return remainder < 2 ? 0 : 11 - remainder
+  }
+
+  // Calculate first verification digit
+  const firstDV = calcVerificationDigit(nums.slice(0, 9), 10)
+  if (nums[9] !== firstDV) return false
+
+  // Calculate second verification digit
+  const secondDV = calcVerificationDigit(nums.slice(0, 10), 11)
+  return nums[10] === secondDV
+}
+
+/**
+ * Validates and formats CPF input
+ * @param cpf CPF string to validate and format
+ * @returns Object with validation result and formatted CPF
+ */
+export function validateAndFormatCPF(cpf: string): { isValid: boolean; formatted: string; error?: string } {
+  if (!cpf || cpf.trim() === '') {
+    return { isValid: true, formatted: '' } // Empty is valid (optional field)
+  }
+
+  const cleanCPF = cpf.replace(/\D/g, '')
+  
+  if (cleanCPF.length !== 11) {
+    return { 
+      isValid: false, 
+      formatted: formatCPF(cpf), 
+      error: 'CPF deve ter 11 dígitos' 
+    }
+  }
+
+  const isValid = isValidCPF(cleanCPF)
+  
+  return {
+    isValid,
+    formatted: formatCPF(cpf),
+    error: isValid ? undefined : 'CPF inválido'
+  }
 }
 
 export const formatCellPhone = (value: string): string => {

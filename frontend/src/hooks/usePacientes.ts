@@ -34,11 +34,25 @@ interface PacientesResponse {
   totalPages: number
 }
 
-export const usePacientes = (page: number = 1, limit: number = 100) => {
+export const usePacientes = (page: number = 1, limit: number = 100, filters?: any) => {
   return useQuery<PacientesResponse>({
-    queryKey: ['pacientes', page, limit],
+    queryKey: ['pacientes', page, limit, filters],
     queryFn: async () => {
-      const response = await api.get(`/pacientes?page=${page}&limit=${limit}`)
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+      
+      // Adicionar filtros se existirem
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value && value !== '') {
+            params.append(key, value as string);
+          }
+        });
+      }
+      
+      const response = await api.get(`/pacientes?${params.toString()}`)
       return response.data
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
