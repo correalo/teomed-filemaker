@@ -66,6 +66,7 @@ export default function PacientesPage() {
       Object.entries(filters).filter(([_, value]) => value !== undefined && value !== '')
     )
     
+    // Armazenar os filtros de busca para identificar o paciente correto
     setSearchFilters(cleanFilters)
     setSearchFields(pendingSearchFields)
     
@@ -88,16 +89,199 @@ export default function PacientesPage() {
   useEffect(() => {
     if (data?.pacientes) {
       setFilteredPacientes(data.pacientes)
-      if (isSearchMode && data.pacientes.length > 0) {
-        setCurrentPacienteIndex(0) // Reset para primeiro resultado
+      // Só navegar para último se não estiver em modo busca e não houver filtros aplicados
+      if (!isSearchMode && Object.keys(searchFilters).length === 0 && data.pacientes.length > 0) {
+        setCurrentPacienteIndex(data.pacientes.length - 1) // Último paciente apenas quando não há busca
       }
     }
-  }, [data?.pacientes, isSearchMode])
+  }, [data?.pacientes, isSearchMode, searchFilters])
 
-  // Navegar para primeiro resultado após busca
+  // Função para encontrar o paciente mais relevante baseado nos filtros de busca
+  const findMostRelevantPatient = (pacientes: any[], filters: any) => {
+    if (!pacientes.length || !Object.keys(filters).length) return 0
+
+    // Prioridade 1: Campos únicos/identificadores
+    if (filters.cpf) {
+      const cpfMatch = pacientes.findIndex(p => 
+        p.documentos?.cpf?.replace(/\D/g, '') === filters.cpf.replace(/\D/g, '')
+      )
+      if (cpfMatch !== -1) return cpfMatch
+    }
+
+    if (filters.prontuario) {
+      const prontuarioMatch = pacientes.findIndex(p => 
+        p.prontuario === Number(filters.prontuario)
+      )
+      if (prontuarioMatch !== -1) return prontuarioMatch
+    }
+
+    if (filters.rg) {
+      const rgMatch = pacientes.findIndex(p => 
+        p.documentos?.rg?.toLowerCase() === filters.rg.toLowerCase()
+      )
+      if (rgMatch !== -1) return rgMatch
+    }
+
+    if (filters.carteirinha) {
+      const carteirinhaMatch = pacientes.findIndex(p => 
+        p.convenio?.carteirinha?.toLowerCase() === filters.carteirinha.toLowerCase()
+      )
+      if (carteirinhaMatch !== -1) return carteirinhaMatch
+    }
+
+    // Prioridade 2: Nome (match exato primeiro)
+    if (filters.nome) {
+      const exactNameMatch = pacientes.findIndex(p => 
+        p.nome?.toLowerCase() === filters.nome.toLowerCase()
+      )
+      if (exactNameMatch !== -1) return exactNameMatch
+      
+      const startsWithMatch = pacientes.findIndex(p => 
+        p.nome?.toLowerCase().startsWith(filters.nome.toLowerCase())
+      )
+      if (startsWithMatch !== -1) return startsWithMatch
+    }
+
+    // Prioridade 3: Contatos
+    if (filters.email) {
+      const emailMatch = pacientes.findIndex(p => 
+        p.contato?.email?.toLowerCase() === filters.email.toLowerCase()
+      )
+      if (emailMatch !== -1) return emailMatch
+    }
+
+    if (filters.telefone) {
+      const telefoneMatch = pacientes.findIndex(p => 
+        p.contato?.telefone?.replace(/\D/g, '') === filters.telefone.replace(/\D/g, '')
+      )
+      if (telefoneMatch !== -1) return telefoneMatch
+    }
+
+    if (filters.celular) {
+      const celularMatch = pacientes.findIndex(p => 
+        p.contato?.celular?.replace(/\D/g, '') === filters.celular.replace(/\D/g, '')
+      )
+      if (celularMatch !== -1) return celularMatch
+    }
+
+    // Prioridade 4: Endereço
+    if (filters.logradouro) {
+      const logradouroMatch = pacientes.findIndex(p => 
+        p.endereco?.normalizado?.logradouro?.toLowerCase().includes(filters.logradouro.toLowerCase())
+      )
+      if (logradouroMatch !== -1) return logradouroMatch
+    }
+
+    if (filters.numero) {
+      const numeroMatch = pacientes.findIndex(p => 
+        p.endereco?.numero === filters.numero
+      )
+      if (numeroMatch !== -1) return numeroMatch
+    }
+
+    if (filters.cep) {
+      const cepMatch = pacientes.findIndex(p => 
+        p.endereco?.cep?.replace(/\D/g, '') === filters.cep.replace(/\D/g, '')
+      )
+      if (cepMatch !== -1) return cepMatch
+    }
+
+    if (filters.bairro) {
+      const bairroMatch = pacientes.findIndex(p => 
+        p.endereco?.normalizado?.bairro?.toLowerCase().includes(filters.bairro.toLowerCase())
+      )
+      if (bairroMatch !== -1) return bairroMatch
+    }
+
+    if (filters.cidade) {
+      const cidadeMatch = pacientes.findIndex(p => 
+        p.endereco?.normalizado?.cidade?.toLowerCase().includes(filters.cidade.toLowerCase())
+      )
+      if (cidadeMatch !== -1) return cidadeMatch
+    }
+
+    if (filters.estado) {
+      const estadoMatch = pacientes.findIndex(p => 
+        p.endereco?.normalizado?.estado?.toLowerCase() === filters.estado.toLowerCase()
+      )
+      if (estadoMatch !== -1) return estadoMatch
+    }
+
+    // Prioridade 5: Convênio
+    if (filters.convenio) {
+      const convenioMatch = pacientes.findIndex(p => 
+        p.convenio?.nome?.toLowerCase().includes(filters.convenio.toLowerCase())
+      )
+      if (convenioMatch !== -1) return convenioMatch
+    }
+
+    if (filters.plano) {
+      const planoMatch = pacientes.findIndex(p => 
+        p.convenio?.plano?.toLowerCase().includes(filters.plano.toLowerCase())
+      )
+      if (planoMatch !== -1) return planoMatch
+    }
+
+    // Prioridade 6: Dados demográficos
+    if (filters.sexo) {
+      const sexoMatch = pacientes.findIndex(p => 
+        p.sexo?.toLowerCase() === filters.sexo.toLowerCase()
+      )
+      if (sexoMatch !== -1) return sexoMatch
+    }
+
+    if (filters.idade) {
+      const idadeMatch = pacientes.findIndex(p => 
+        p.idade === Number(filters.idade)
+      )
+      if (idadeMatch !== -1) return idadeMatch
+    }
+
+    if (filters.dataNascimento) {
+      const nascimentoMatch = pacientes.findIndex(p => 
+        p.dataNascimento === filters.dataNascimento
+      )
+      if (nascimentoMatch !== -1) return nascimentoMatch
+    }
+
+    // Prioridade 7: Outros campos
+    if (filters.indicacao) {
+      const indicacaoMatch = pacientes.findIndex(p => 
+        p.indicacao?.toLowerCase().includes(filters.indicacao.toLowerCase())
+      )
+      if (indicacaoMatch !== -1) return indicacaoMatch
+    }
+
+    if (filters.peso) {
+      const pesoMatch = pacientes.findIndex(p => 
+        Math.abs(p.peso - Number(filters.peso)) < 0.1
+      )
+      if (pesoMatch !== -1) return pesoMatch
+    }
+
+    if (filters.altura) {
+      const alturaMatch = pacientes.findIndex(p => 
+        Math.abs(p.altura - Number(filters.altura)) < 0.01
+      )
+      if (alturaMatch !== -1) return alturaMatch
+    }
+
+    if (filters.imc) {
+      const imcMatch = pacientes.findIndex(p => 
+        Math.abs(p.imc - Number(filters.imc)) < 0.1
+      )
+      if (imcMatch !== -1) return imcMatch
+    }
+
+    // Caso contrário, retornar o primeiro resultado
+    return 0
+  }
+
+  // Navegar para paciente mais relevante após busca
   useEffect(() => {
-    if (isSearchMode && data?.pacientes && data.pacientes.length > 0 && Object.keys(searchFilters).length > 0) {
-      setCurrentPacienteIndex(0)
+    if (!isSearchMode && data?.pacientes && data.pacientes.length > 0 && Object.keys(searchFilters).length > 0) {
+      const relevantIndex = findMostRelevantPatient(data.pacientes, searchFilters)
+      setCurrentPacienteIndex(relevantIndex)
     }
   }, [searchFilters, data?.pacientes, isSearchMode])
 
