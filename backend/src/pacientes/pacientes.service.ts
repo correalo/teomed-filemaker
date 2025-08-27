@@ -50,6 +50,7 @@ export class PacientesService {
         { 'convenio.nome': searchRegex },
         { 'convenio.plano': searchRegex },
         { 'convenio.carteirinha': searchRegex },
+        { indicacao: searchRegex }
       ];
 
       // Se for número, buscar também por prontuario e idade
@@ -226,6 +227,24 @@ export class PacientesService {
     } catch (error) {
       console.error('Erro ao atualizar idades:', error);
     }
+  }
+
+  async autocompleteNomes(query: string): Promise<string[]> {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+
+    const searchRegex = new RegExp(`^${query.trim()}`, 'i');
+    
+    const pacientes = await this.pacienteModel.find({
+      nome: searchRegex
+    })
+    .select('nome')
+    .limit(20)
+    .sort({ nome: 1 })
+    .exec();
+
+    return pacientes.map(p => p.nome).filter((nome, index, array) => array.indexOf(nome) === index);
   }
 
   async remove(id: string): Promise<Paciente> {

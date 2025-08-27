@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Paciente } from '../types/paciente'
-import { formatPeso, formatAltura, displayPeso, displayAltura, validatePeso, validateAltura } from '@/utils/formatters'
+import { formatPeso, formatAltura, displayPeso, displayAltura, validatePeso, validateAltura, calculateIMC } from '@/utils/formatters'
 import { fetchAddressByCep, formatCep, formatPhone, formatCellPhone, formatRG, formatCPF, formatEmail, validateEmail, validateAndFormatCPF } from '../utils/viaCep'
 import ConvenioSelect from './ConvenioSelect'
 import PlanoSelect from './PlanoSelect'
@@ -14,6 +14,7 @@ import EmailButton from './EmailButton'
 import CPFInput from './CPFInput'
 import { BotaoDeletarPaciente } from './BotaoDeletarPaciente'
 import { useToast } from './Toast'
+import AutocompleteInput from './AutocompleteInput'
 
 interface PacienteCardProps {
   paciente: Paciente
@@ -72,7 +73,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
     
     setIsSaving(true)
     try {
-      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}`, {
+      const response = await fetch(`http://localhost:3005/pacientes/${paciente._id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -212,23 +213,26 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="sm:col-span-2 lg:col-span-4">
           <label className="block text-xs font-medium text-filemaker-text mb-1">NOME</label>
-          <input
-            type="text"
-            value={isSearchMode ? (searchFields.nome || '') : (currentData?.nome || '')}
-            readOnly={!isEditing && !isSearchMode}
-            onChange={(e) => {
-              if (isSearchMode) {
-                onSearchFieldChange?.('nome', e.target.value)
-              } else {
-                handleInputChange('nome', e.target.value)
-              }
-            }}
-            className={`filemaker-input w-full text-sm sm:text-base ${
-              !currentData?.nome && isEditing ? 'border-red-500' : ''
-            } ${isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''}`}
-            style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
-            placeholder={isSearchMode ? "Buscar por nome..." : ""}
-          />
+          {isSearchMode ? (
+            <AutocompleteInput
+              value={searchFields.nome || ''}
+              onChange={(value) => onSearchFieldChange?.('nome', value)}
+              placeholder="Buscar por nome..."
+              className={`filemaker-input w-full text-sm sm:text-base bg-orange-50 border-orange-300 focus:border-orange-500`}
+              apiEndpoint="http://localhost:3005/pacientes/autocomplete/nomes"
+            />
+          ) : (
+            <input
+              type="text"
+              value={currentData?.nome || ''}
+              readOnly={!isEditing}
+              onChange={(e) => handleInputChange('nome', e.target.value)}
+              className={`filemaker-input w-full text-sm sm:text-base ${
+                !currentData?.nome && isEditing ? 'border-red-500' : ''
+              }`}
+              style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+            />
+          )}
           {isEditing && !currentData?.nome && (
             <div className="text-red-500 text-xs mt-1">Campo obrigatório</div>
           )}
@@ -433,12 +437,16 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                             ...prev!,
                             endereco: {
                               ...prev!.endereco,
+                              completo: prev!.endereco?.completo || '',
+                              cep: prev!.endereco?.cep || '',
                               normalizado: {
                                 ...prev!.endereco?.normalizado,
                                 logradouro: addressData.logradouro || '',
                                 bairro: addressData.bairro || '',
                                 cidade: addressData.localidade || '',
-                                estado: addressData.uf || ''
+                                estado: addressData.uf || '',
+                                numero: prev!.endereco?.normalizado?.numero || '',
+                                complemento: prev!.endereco?.normalizado?.complemento || ''
                               }
                             }
                           }))
@@ -765,6 +773,13 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                         }
                         
                         handleInputChange('dados_clinicos.peso', formatted)
+                        
+                        // Calcular IMC automaticamente
+                        const altura = editedPaciente?.dados_clinicos?.altura || ''
+                        if (altura) {
+                          const imc = calculateIMC(formatted, String(altura))
+                          handleInputChange('dados_clinicos.imc', imc)
+                        }
                       }}
                       className="filemaker-input w-full text-sm"
                       style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
@@ -791,6 +806,13 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                         }
                         
                         handleInputChange('dados_clinicos.altura', formatted)
+                        
+                        // Calcular IMC automaticamente
+                        const peso = editedPaciente?.dados_clinicos?.peso || ''
+                        if (peso) {
+                          const imc = calculateIMC(String(peso), formatted)
+                          handleInputChange('dados_clinicos.imc', imc)
+                        }
                       }}
                       className="filemaker-input w-full text-sm"
                       style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
@@ -805,10 +827,10 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                     <input
                       type="text"
                       value={isEditing ? (editedPaciente?.dados_clinicos?.imc || '') : (paciente.dados_clinicos?.imc || '')}
-                      readOnly={!isEditing}
-                      onChange={(e) => handleInputChange('dados_clinicos.imc', e.target.value)}
+                      readOnly={true}
                       className="filemaker-input w-full text-sm"
-                      style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
+                      style={{ backgroundColor: '#f0f0f0', color: '#666' }}
+                      placeholder="Calculado automaticamente"
                     />
                   </div>
               </div>
@@ -905,6 +927,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                   <span>HÉRNIA INCISIONAL</span>
                 </label>
               </div>
+              
             </div>
           </div>
         </div>
@@ -1042,58 +1065,37 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                     <label className="flex items-center space-x-2 mb-2">
                       <input
                         type="checkbox"
-                        checked={(editedPaciente as any)?.cirurgia?.previa || false}
-                        onChange={(e) => handleInputChange('cirurgia.previa', e.target.checked)}
+                        checked={Boolean(editedPaciente?.dados_clinicos?.cirurgia_previa)}
+                        onChange={(e) => handleInputChange('dados_clinicos.cirurgia_previa', e.target.checked)}
                       />
                       <span className="text-xs font-medium text-filemaker-text">CIRURGIA PRÉVIA</span>
                     </label>
                     <div className="space-y-2">
                       <div>
-                        <label className="block text-xs font-medium text-filemaker-text mb-1">DATA</label>
-                        <input
-                          type="date"
-                          value={(editedPaciente as any)?.cirurgia?.data || ''}
-                          onChange={(e) => handleInputChange('cirurgia.data', e.target.value)}
-                          className="filemaker-input w-full text-sm"
-                          style={{ backgroundColor: '#fff' }}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-filemaker-text mb-1">LOCAL</label>
+                        <label className="block text-xs font-medium text-filemaker-text mb-1">DETALHAMENTO</label>
                         <input
                           type="text"
-                          value={(editedPaciente as any)?.cirurgia?.local || ''}
-                          onChange={(e) => handleInputChange('cirurgia.local', e.target.value)}
+                          value={editedPaciente?.dados_clinicos?.cir_previa || ''}
+                          onChange={(e) => handleInputChange('dados_clinicos.cir_previa', e.target.value)}
                           className="filemaker-input w-full text-sm"
                           style={{ backgroundColor: '#fff' }}
-                          placeholder="Local da cirurgia"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-filemaker-text mb-1">TRATAMENTO</label>
-                        <input
-                          type="text"
-                          value={(editedPaciente as any)?.cirurgia?.tratamento || ''}
-                          onChange={(e) => handleInputChange('cirurgia.tratamento', e.target.value)}
-                          className="filemaker-input w-full text-sm"
-                          style={{ backgroundColor: '#fff' }}
-                          placeholder="Tipo de tratamento"
+                          placeholder="Detalhes da cirurgia prévia..."
                         />
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div>
-                    {paciente.cirurgia?.previa && (
-                      <div className="text-sm">
+                  <div className="text-sm space-y-1">
+                    {paciente.dados_clinicos?.cirurgia_previa && (
+                      <div>
                         <div><strong>Cirurgia Prévia:</strong> Sim</div>
-                        <div><strong>Data:</strong> {formatDate(paciente.cirurgia.data)}</div>
-                        <div><strong>Local:</strong> {paciente.cirurgia.local}</div>
-                        <div><strong>Tratamento:</strong> {paciente.cirurgia.tratamento}</div>
+                        {paciente.dados_clinicos?.cir_previa && (
+                          <div><strong>Detalhamento:</strong> {paciente.dados_clinicos.cir_previa}</div>
+                        )}
                       </div>
                     )}
-                    {!paciente.cirurgia?.previa && (
-                      <div className="text-sm text-gray-500">Nenhuma cirurgia prévia</div>
+                    {!paciente.dados_clinicos?.cirurgia_previa && (
+                      <div className="text-gray-500">Nenhuma cirurgia prévia</div>
                     )}
                   </div>
                 )}

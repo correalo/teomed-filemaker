@@ -242,3 +242,26 @@ export class Paciente {
 }
 
 export const PacienteSchema = SchemaFactory.createForClass(Paciente);
+
+// Middleware para calcular IMC automaticamente
+PacienteSchema.pre('save', function(next) {
+  if (this.dados_clinicos && this.dados_clinicos.peso && this.dados_clinicos.altura) {
+    const peso = this.dados_clinicos.peso;
+    const altura = this.dados_clinicos.altura;
+    this.dados_clinicos.imc = parseFloat((peso / (altura * altura)).toFixed(2));
+  }
+  next();
+});
+
+PacienteSchema.pre('findOneAndUpdate', function(next) {
+  const update = this.getUpdate() as any;
+  if (update && update.dados_clinicos) {
+    const peso = update.dados_clinicos.peso;
+    const altura = update.dados_clinicos.altura;
+    
+    if (peso && altura) {
+      update.dados_clinicos.imc = parseFloat((peso / (altura * altura)).toFixed(2));
+    }
+  }
+  next();
+});

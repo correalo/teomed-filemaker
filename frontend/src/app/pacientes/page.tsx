@@ -20,6 +20,7 @@ export default function PacientesPage() {
   const [searchFilters, setSearchFilters] = useState<any>({})
   const [filteredPacientes, setFilteredPacientes] = useState<Paciente[]>([])
   const [searchFields, setSearchFields] = useState<any>({})
+  const [pendingSearchFields, setPendingSearchFields] = useState<any>({})
   const router = useRouter()
   const { data, isLoading, error } = usePacientes(1, 10000, isSearchMode ? searchFilters : undefined)
   const toast = useToast()
@@ -27,6 +28,7 @@ export default function PacientesPage() {
   useEffect(() => {
     setMounted(true)
     if (typeof window !== 'undefined') {
+      const API_BASE_URL = 'http://localhost:3005'
       const token = localStorage.getItem('token')
       if (!token) {
         router.push('/')
@@ -50,35 +52,37 @@ export default function PacientesPage() {
     }
   }, [currentPacienteIndex, mounted, data?.pacientes])
 
-  // Debounce para busca geral
-  useEffect(() => {
+  // Função para executar busca
+  const executeSearch = () => {
     if (!isSearchMode) return
     
-    const timeoutId = setTimeout(() => {
-      if (searchTerm.trim()) {
-        setSearchFilters({ q: searchTerm.trim(), ...searchFields })
-      } else {
-        setSearchFilters(searchFields)
-      }
-    }, 300)
-
-    return () => clearTimeout(timeoutId)
-  }, [searchTerm, isSearchMode, searchFields])
-
-  // Debounce para campos de busca individuais
-  useEffect(() => {
-    if (!isSearchMode) return
+    const filters = { ...pendingSearchFields }
+    if (searchTerm.trim()) {
+      filters.q = searchTerm.trim()
+    }
     
-    const timeoutId = setTimeout(() => {
-      const filters = { ...searchFields }
-      if (searchTerm.trim()) {
-        filters.q = searchTerm.trim()
-      }
-      setSearchFilters(filters)
-    }, 300)
+    // Remover campos vazios
+    const cleanFilters = Object.fromEntries(
+      Object.entries(filters).filter(([_, value]) => value !== undefined && value !== '')
+    )
+    
+    setSearchFilters(cleanFilters)
+    setSearchFields(pendingSearchFields)
+    
+    // Sair do modo busca após executar
+    setIsSearchMode(false)
+    
+    toast.info(`Busca executada com ${Object.keys(cleanFilters).length} filtro(s)`)
+  }
 
-    return () => clearTimeout(timeoutId)
-  }, [searchFields, isSearchMode, searchTerm])
+  // Função para limpar busca
+  const clearSearch = () => {
+    setSearchTerm('')
+    setSearchFilters({})
+    setSearchFields({})
+    setPendingSearchFields({})
+    toast.info('Filtros de busca limpos')
+  }
 
   // Atualizar lista filtrada quando dados mudarem
   useEffect(() => {
@@ -90,14 +94,22 @@ export default function PacientesPage() {
     }
   }, [data?.pacientes, isSearchMode])
 
+  // Navegar para primeiro resultado após busca
+  useEffect(() => {
+    if (isSearchMode && data?.pacientes && data.pacientes.length > 0 && Object.keys(searchFilters).length > 0) {
+      setCurrentPacienteIndex(0)
+    }
+  }, [searchFilters, data?.pacientes, isSearchMode])
+
   const toggleSearchMode = () => {
     setIsSearchMode(!isSearchMode)
     setSearchTerm('')
     setSearchFilters({})
     setSearchFields({})
+    setPendingSearchFields({})
     if (!isSearchMode) {
       // Entrando no modo busca
-      toast.info('Modo Busca ativado - Todos os campos podem ser usados para buscar')
+      toast.info('Modo Busca ativado - Preencha os campos e clique em Buscar')
     } else {
       // Saindo do modo busca
       toast.info('Modo Busca desativado')
@@ -105,7 +117,7 @@ export default function PacientesPage() {
   }
 
   const handleSearchFieldChange = (field: string, value: string) => {
-    setSearchFields((prev: any) => ({
+    setPendingSearchFields((prev: any) => ({
       ...prev,
       [field]: value || undefined
     }))
@@ -157,15 +169,77 @@ export default function PacientesPage() {
 
   if (!data?.pacientes?.length) {
     return (
-      <div className="min-h-screen bg-filemaker-gray flex items-center justify-center">
-        <div className="filemaker-card p-8 text-center">
-          <div className="text-filemaker-text mb-4">
-            <svg className="w-16 h-16 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-            </svg>
+      <div className="min-h-screen bg-filemaker-gray flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 text-center max-w-md w-full border border-gray-200">
+          <div className="mb-6">
+            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center">
+              <svg className="w-10 h-10 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+              </svg>
+            </div>
           </div>
-          <h2 className="text-xl font-bold text-filemaker-text mb-2">Nenhum paciente encontrado</h2>
-          <p className="text-filemaker-text">Verifique se há dados no banco de dados</p>
+          
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">
+            {isSearchMode ? 'Nenhum resultado encontrado' : 'Nenhum paciente cadastrado'}
+          </h2>
+          
+          <p className="text-gray-600 mb-6">
+            {isSearchMode 
+              ? 'Não foram encontrados pacientes com os critérios de busca informados. Tente ajustar os filtros ou limpar a busca.'
+              : 'Não há pacientes cadastrados no sistema. Comece adicionando um novo paciente.'
+            }
+          </p>
+          
+          <div className="space-y-3">
+            {isSearchMode ? (
+              <>
+                <button 
+                  onClick={() => {
+                    setIsSearchMode(false)
+                    setSearchFilters({})
+                    setSearchFields({})
+                    setSearchTerm('')
+                    toast.info('Busca limpa - mostrando todos os pacientes')
+                  }}
+                  className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Voltar e Ver Todos os Pacientes
+                </button>
+                <button 
+                  onClick={() => {
+                    setSearchFields({})
+                    setSearchTerm('')
+                    toast.info('Filtros de busca limpos')
+                  }}
+                  className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium flex items-center justify-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Limpar Filtros de Busca
+                </button>
+              </>
+            ) : (
+              <button 
+                onClick={() => setShowCreateForm(true)}
+                className="w-full px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Cadastrar Primeiro Paciente
+              </button>
+            )}
+          </div>
+          
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-500">
+              {isSearchMode ? 'Dica: Use filtros mais amplos para encontrar mais resultados' : 'Precisa de ajuda? Entre em contato com o suporte'}
+            </p>
+          </div>
         </div>
       </div>
     )
@@ -254,8 +328,22 @@ export default function PacientesPage() {
                 {isSearchMode ? '🔍 Sair Busca' : '🔍 Modo Busca'}
               </button>
               {isSearchMode && (
-                <div className="text-sm text-orange-700 font-medium">
-                  {data?.total || 0} resultado(s)
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={executeSearch}
+                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+                  >
+                    🔍 Buscar
+                  </button>
+                  <button
+                    onClick={clearSearch}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium"
+                  >
+                    🗑️ Limpar
+                  </button>
+                  <div className="text-sm text-orange-700 font-medium">
+                    {data?.total || 0} resultado(s)
+                  </div>
                 </div>
               )}
             </div>
@@ -320,11 +408,27 @@ export default function PacientesPage() {
             </button>
           </div>
           
-          {/* Terceira linha: Contador de resultados */}
+          {/* Terceira linha: Botões de busca e contador */}
           {isSearchMode && (
-            <div className="w-full flex justify-center">
-              <div className="text-xs text-orange-200 font-medium">
-                {data?.total || 0} resultado(s)
+            <div className="w-full flex flex-col gap-2">
+              <div className="flex justify-center gap-2">
+                <button
+                  onClick={executeSearch}
+                  className="px-3 py-1 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all duration-200 shadow-md text-xs font-medium"
+                >
+                  🔍 Buscar
+                </button>
+                <button
+                  onClick={clearSearch}
+                  className="px-3 py-1 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-all duration-200 shadow-md text-xs font-medium"
+                >
+                  🗑️ Limpar
+                </button>
+              </div>
+              <div className="w-full flex justify-center">
+                <div className="text-xs text-orange-200 font-medium">
+                  {data?.total || 0} resultado(s)
+                </div>
               </div>
             </div>
           )}
@@ -333,11 +437,12 @@ export default function PacientesPage() {
 
       {/* Main Content - Responsivo */}
       <div className="p-2 sm:p-4 lg:p-6 space-y-4 lg:space-y-6">
+
         {/* Patient Card */}
         <PacienteCard 
           paciente={currentPaciente} 
           isSearchMode={isSearchMode}
-          searchFields={searchFields}
+          searchFields={pendingSearchFields}
           onSearchFieldChange={handleSearchFieldChange}
         />
         
@@ -345,7 +450,7 @@ export default function PacientesPage() {
         <PortalSection 
           pacienteId={currentPaciente._id} 
           isSearchMode={isSearchMode}
-          searchFields={searchFields}
+          searchFields={pendingSearchFields}
           onSearchFieldChange={handleSearchFieldChange}
         />
       </div>

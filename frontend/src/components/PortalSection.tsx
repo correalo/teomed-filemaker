@@ -12,7 +12,7 @@ interface PortalSectionProps {
 }
 
 const api = axios.create({
-  baseURL: 'http://localhost:3004',
+  baseURL: 'http://localhost:3005',
 })
 
 api.interceptors.request.use((config) => {
@@ -528,6 +528,19 @@ export default function PortalSection({ pacienteId, isSearchMode = false, search
                   </div>
                 </div>
               </div>
+              
+              {/* Cirurgia Prévia */}
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">CIRURGIA PRÉVIA</label>
+                <input
+                  type="text"
+                  value={searchFields.cirurgia_previa || ''}
+                  onChange={(e) => onSearchFieldChange?.('cirurgia_previa', e.target.value)}
+                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
+                  style={{ backgroundColor: '#fef3e2' }}
+                  placeholder="Buscar cirurgia prévia..."
+                />
+              </div>
             </div>
           </div>
 
@@ -621,17 +634,6 @@ export default function PortalSection({ pacienteId, isSearchMode = false, search
               TRATAMENTOS
             </h3>
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-filemaker-text mb-1">CIRURGIA PRÉVIA</label>
-                <input
-                  type="text"
-                  value={searchFields.cirurgia_previa || ''}
-                  onChange={(e) => onSearchFieldChange?.('cirurgia_previa', e.target.value)}
-                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
-                  style={{ backgroundColor: '#fef3e2' }}
-                  placeholder="Buscar cirurgia prévia..."
-                />
-              </div>
               <div>
                 <label className="block text-xs font-medium text-filemaker-text mb-1">DATA</label>
                 <input

@@ -52,6 +52,11 @@ export class PacientesController {
     return this.pacientesService.search(query);
   }
 
+  @Get('autocomplete/nomes')
+  autocompleteNomes(@Query('q') query: string) {
+    return this.pacientesService.autocompleteNomes(query);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.pacientesService.findOne(id);

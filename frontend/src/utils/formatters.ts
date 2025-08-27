@@ -111,3 +111,17 @@ export const displayAltura = (value: string): string => {
   if (!value) return ''
   return `${value} m`
 }
+
+export const calculateIMC = (peso: string, altura: string): string => {
+  if (!peso || !altura) return ''
+  
+  const pesoNum = parseFloat(peso)
+  const alturaNum = parseFloat(altura)
+  
+  if (isNaN(pesoNum) || isNaN(alturaNum) || pesoNum <= 0 || alturaNum <= 0) {
+    return ''
+  }
+  
+  const imc = pesoNum / (alturaNum * alturaNum)
+  return imc.toFixed(2)
+}

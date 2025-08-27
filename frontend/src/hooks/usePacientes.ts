@@ -3,7 +3,7 @@ import axios from 'axios'
 import { Paciente } from '@/types/paciente'
 
 const api = axios.create({
-  baseURL: 'http://localhost:3004',
+  baseURL: 'http://localhost:3005',
 })
 
 api.interceptors.request.use((config) => {
@@ -35,8 +35,11 @@ interface PacientesResponse {
 }
 
 export const usePacientes = (page: number = 1, limit: number = 100, filters?: any) => {
+  // Serializar filtros para garantir que mudanças sejam detectadas
+  const filtersKey = filters ? JSON.stringify(filters) : null
+  
   return useQuery<PacientesResponse>({
-    queryKey: ['pacientes', page, limit, filters],
+    queryKey: ['pacientes', page, limit, filtersKey],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
