@@ -86,6 +86,7 @@ export interface Paciente {
   dataNascimento: string;
   idade: number;
   sexo: string;
+  profissao: string;
   dataPrimeiraConsulta: string;
   prontuario: number;
   indicacao: string;

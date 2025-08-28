@@ -8,6 +8,7 @@ import { formatPeso, formatAltura, displayPeso, displayAltura, validatePeso, val
 import { fetchAddressByCep, formatCep, formatPhone, formatCellPhone, formatRG, formatCPF, formatEmail, validateEmail, validateAndFormatCPF } from '../utils/viaCep'
 import ConvenioSelect from './ConvenioSelect'
 import PlanoSelect from './PlanoSelect'
+import ProfissaoSelect from './ProfissaoSelect'
 import EmailInput from './EmailInput'
 import WhatsAppButton from './WhatsAppButton'
 import EmailButton from './EmailButton'
@@ -296,6 +297,24 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
             <option value="F">Feminino</option>
             <option value="O">Outro</option>
           </select>
+        </div>
+        <div className="lg:col-span-2">
+          <label className="block text-xs font-medium text-filemaker-text mb-1">PROFISSÃO</label>
+          <ProfissaoSelect
+            value={isSearchMode ? (searchFields.profissao || '') : (currentData?.profissao || '')}
+            onChange={(value) => {
+              if (isSearchMode) {
+                onSearchFieldChange?.('profissao', value)
+              } else {
+                handleInputChange('profissao', value)
+              }
+            }}
+            readOnly={!isEditing && !isSearchMode}
+            className={`filemaker-input w-full text-sm sm:text-base ${
+              isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''
+            }`}
+            style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
+          />
         </div>
         <div className="lg:col-span-2">
           <label className="block text-xs font-medium text-filemaker-text mb-1">DATA 1ª CONSULTA</label>

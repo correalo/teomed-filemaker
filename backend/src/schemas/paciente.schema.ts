@@ -211,6 +211,9 @@ export class Paciente {
   sexo: string;
 
   @Prop()
+  profissao: string;
+
+  @Prop()
   dataPrimeiraConsulta: string;
 
   @Prop({ unique: true })

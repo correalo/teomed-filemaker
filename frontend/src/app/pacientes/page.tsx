@@ -230,6 +230,13 @@ export default function PacientesPage() {
       if (sexoMatch !== -1) return sexoMatch
     }
 
+    if (filters.profissao) {
+      const profissaoMatch = pacientes.findIndex(p => 
+        p.profissao?.toLowerCase().includes(filters.profissao.toLowerCase())
+      )
+      if (profissaoMatch !== -1) return profissaoMatch
+    }
+
     if (filters.idade) {
       const idadeMatch = pacientes.findIndex(p => 
         p.idade === Number(filters.idade)

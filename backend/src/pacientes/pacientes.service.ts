@@ -83,6 +83,10 @@ export class PacientesService {
       andConditions.push({ sexo: filters.sexo });
     }
     
+    if (filters.profissao) {
+      andConditions.push({ profissao: new RegExp(filters.profissao, 'i') });
+    }
+    
     if (filters.convenio) {
       andConditions.push({ 'convenio.nome': new RegExp(filters.convenio, 'i') });
     }
