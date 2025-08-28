@@ -9,6 +9,8 @@ import { fetchAddressByCep, formatCep, formatPhone, formatCellPhone, formatRG, f
 import ConvenioSelect from './ConvenioSelect'
 import PlanoSelect from './PlanoSelect'
 import ProfissaoSelect from './ProfissaoSelect'
+import StatusSelect from './StatusSelect'
+import TratamentosCard from './TratamentosCard'
 import EmailInput from './EmailInput'
 import WhatsAppButton from './WhatsAppButton'
 import EmailButton from './EmailButton'
@@ -74,7 +76,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
     
     setIsSaving(true)
     try {
-      const response = await fetch(`http://localhost:3005/pacientes/${paciente._id}`, {
+      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -220,7 +222,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
               onChange={(value) => onSearchFieldChange?.('nome', value)}
               placeholder="Buscar por nome..."
               className={`filemaker-input w-full text-sm sm:text-base bg-orange-50 border-orange-300 focus:border-orange-500`}
-              apiEndpoint="http://localhost:3005/pacientes/autocomplete/nomes"
+              apiEndpoint="http://localhost:3004/pacientes/autocomplete/nomes"
             />
           ) : (
             <input
@@ -297,24 +299,6 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
             <option value="F">Feminino</option>
             <option value="O">Outro</option>
           </select>
-        </div>
-        <div className="lg:col-span-2">
-          <label className="block text-xs font-medium text-filemaker-text mb-1">PROFISSÃO</label>
-          <ProfissaoSelect
-            value={isSearchMode ? (searchFields.profissao || '') : (currentData?.profissao || '')}
-            onChange={(value) => {
-              if (isSearchMode) {
-                onSearchFieldChange?.('profissao', value)
-              } else {
-                handleInputChange('profissao', value)
-              }
-            }}
-            readOnly={!isEditing && !isSearchMode}
-            className={`filemaker-input w-full text-sm sm:text-base ${
-              isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''
-            }`}
-            style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
-          />
         </div>
         <div className="lg:col-span-2">
           <label className="block text-xs font-medium text-filemaker-text mb-1">DATA 1ª CONSULTA</label>
@@ -562,7 +546,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
       {/* Contact, Insurance and Documents - Responsivo */}
       <div className="space-y-4 mb-4 sm:mb-6">
         {/* Linha 1: Contato */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div>
             <label className="block text-xs font-medium text-filemaker-text mb-1">TELEFONE</label>
             <input
@@ -613,6 +597,24 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
             </div>
           </div>
           <div>
+            <label className="block text-xs font-medium text-filemaker-text mb-1">PROFISSÃO</label>
+            <ProfissaoSelect
+              value={isSearchMode ? (searchFields.profissao || '') : (currentData?.profissao || '')}
+              onChange={(value) => {
+                if (isSearchMode) {
+                  onSearchFieldChange?.('profissao', value)
+                } else {
+                  handleInputChange('profissao', value)
+                }
+              }}
+              readOnly={!isEditing && !isSearchMode}
+              className={`filemaker-input w-full text-sm sm:text-base ${
+                isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''
+              }`}
+              style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
+            />
+          </div>
+          <div>
             <label className="block text-xs font-medium text-filemaker-text mb-1">EMAIL</label>
             <div className="relative">
               <EmailInput
@@ -640,7 +642,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
         </div>
 
         {/* Linha 2: Convênio e Documentos */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 lg:grid-cols-12 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-12 gap-3 sm:gap-4">
           <div className="md:col-span-2 lg:col-span-3 relative">
             <label className="block text-xs font-medium text-filemaker-text mb-1">CONVÊNIO</label>
             {isEditing && !isSearchMode ? (
@@ -670,6 +672,24 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                 placeholder={isSearchMode ? "Buscar por convênio..." : ""}
               />
             )}
+          </div>
+          <div className="md:col-span-1 lg:col-span-2">
+            <label className="block text-xs font-medium text-filemaker-text mb-1">STATUS</label>
+            <StatusSelect
+              value={isSearchMode ? (searchFields.status || '') : (currentData?.status || '')}
+              onChange={(value) => {
+                if (isSearchMode) {
+                  onSearchFieldChange?.('status', value)
+                } else {
+                  handleInputChange('status', value)
+                }
+              }}
+              readOnly={!isEditing && !isSearchMode}
+              className={`filemaker-input w-full text-sm sm:text-base ${
+                isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''
+              }`}
+              style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
+            />
           </div>
           <div className="md:col-span-2 lg:col-span-3">
             <label className="block text-xs font-medium text-filemaker-text mb-1">CARTEIRINHA</label>
@@ -1123,6 +1143,30 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
           </div>
         </div>
       </div>
+      )}
+
+      {/* Card de Tratamentos */}
+      {!isSearchMode && (
+        <TratamentosCard
+          paciente={paciente}
+          isEditing={isEditing}
+          isSearchMode={isSearchMode}
+          searchFields={searchFields}
+          onSearchFieldChange={onSearchFieldChange}
+          onUpdate={(updatedData) => setEditedPaciente(updatedData as Paciente)}
+        />
+      )}
+
+      {/* Card de Tratamentos - Modo Busca */}
+      {isSearchMode && (
+        <TratamentosCard
+          paciente={paciente}
+          isEditing={false}
+          isSearchMode={isSearchMode}
+          searchFields={searchFields}
+          onSearchFieldChange={onSearchFieldChange}
+          onUpdate={() => {}}
+        />
       )}
     </div>
   )

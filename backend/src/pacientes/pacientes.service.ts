@@ -87,6 +87,10 @@ export class PacientesService {
       andConditions.push({ profissao: new RegExp(filters.profissao, 'i') });
     }
     
+    if (filters.status) {
+      andConditions.push({ status: new RegExp(filters.status, 'i') });
+    }
+    
     if (filters.convenio) {
       andConditions.push({ 'convenio.nome': new RegExp(filters.convenio, 'i') });
     }

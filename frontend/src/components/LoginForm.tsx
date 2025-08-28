@@ -21,7 +21,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
     setError('')
 
     try {
-      const response = await axios.post('http://localhost:3005/auth/login', {
+      const response = await axios.post('http://localhost:3004/auth/login', {
         username,
         password,
       })

@@ -1,9 +1,9 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { profissoesList } from '../utils/profissoes'
+import { STATUS_OPTIONS } from '../utils/status'
 
-interface ProfissaoSelectProps {
+interface StatusSelectProps {
   value: string
   onChange: (value: string) => void
   readOnly?: boolean
@@ -11,21 +11,21 @@ interface ProfissaoSelectProps {
   style?: React.CSSProperties
 }
 
-export default function ProfissaoSelect({ 
+export default function StatusSelect({ 
   value, 
   onChange, 
   readOnly = false, 
   className = '',
   style = {}
-}: ProfissaoSelectProps) {
+}: StatusSelectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [dropdownPosition, setDropdownPosition] = useState<'down' | 'up'>('down')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const filteredProfissoes = profissoesList.filter((profissao: string) =>
-    profissao.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredStatus = STATUS_OPTIONS.filter((status: string) =>
+    status.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   useEffect(() => {
@@ -40,8 +40,8 @@ export default function ProfissaoSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleSelect = (profissao: string) => {
-    onChange(profissao)
+  const handleSelect = (status: string) => {
+    onChange(status)
     setIsOpen(false)
     setSearchTerm('')
   }
@@ -84,7 +84,7 @@ export default function ProfissaoSelect({
         readOnly={!isOpen}
         className={`${className} cursor-pointer pr-8`}
         style={style}
-        placeholder={isOpen ? "Digite para buscar..." : "Selecione uma profissão"}
+        placeholder={isOpen ? "Digite para buscar..." : "Selecione um status"}
       />
       <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
         <svg 
@@ -107,20 +107,20 @@ export default function ProfissaoSelect({
             marginBottom: dropdownPosition === 'up' ? '4px' : '0'
           }}
         >
-          {filteredProfissoes.length > 0 ? (
-            filteredProfissoes.map((profissao: string, index: number) => (
+          {filteredStatus.length > 0 ? (
+            filteredStatus.map((status: string, index: number) => (
               <button
                 key={index}
                 type="button"
-                onClick={() => handleSelect(profissao)}
+                onClick={() => handleSelect(status)}
                 className="w-full px-3 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none text-sm"
               >
-                {profissao}
+                {status}
               </button>
             ))
           ) : (
             <div className="px-3 py-2 text-gray-500 text-sm">
-              Nenhuma profissão encontrada
+              Nenhum status encontrado
             </div>
           )}
         </div>

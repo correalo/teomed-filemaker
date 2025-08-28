@@ -8,6 +8,8 @@ import { useToast } from './Toast'
 import { fetchAddressByCep, formatCep, formatPhone, formatCellPhone, formatRG, formatCPF, formatEmail, validateEmail, validateAndFormatCPF } from '../utils/viaCep'
 import ConvenioSelect from './ConvenioSelect'
 import PlanoSelect from './PlanoSelect'
+import ProfissaoSelect from './ProfissaoSelect'
+import StatusSelect from './StatusSelect'
 import EmailInput from './EmailInput'
 import WhatsAppButton from './WhatsAppButton'
 import EmailButton from './EmailButton'
@@ -27,6 +29,8 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
     dataNascimento: '',
     idade: '',
     sexo: '',
+    profissao: '',
+    status: '',
     indicacao: '',
     dataPrimeiraConsulta: '',
     endereco: { 
@@ -119,7 +123,7 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
     
     setIsCreating(true)
     try {
-      const response = await fetch('http://localhost:3005/pacientes', {
+      const response = await fetch('http://localhost:3004/pacientes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -355,7 +359,21 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
           {/* Contato */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-filemaker-text border-b pb-1">CONTATO</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">TELEFONE</label>
+                <input
+                  type="tel"
+                  value={formData.contato.telefone}
+                  onChange={(e) => {
+                    const formattedPhone = formatPhone(e.target.value)
+                    handleInputChange('contato.telefone', formattedPhone)
+                  }}
+                  className="filemaker-input w-full"
+                  placeholder="(00) 0000-0000"
+                  maxLength={14}
+                />
+              </div>
               <div>
                 <label className="block text-xs font-medium text-filemaker-text mb-1">CELULAR</label>
                 <div className="relative">
@@ -376,17 +394,11 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-filemaker-text mb-1">TELEFONE</label>
-                <input
-                  type="tel"
-                  value={formData.contato.telefone}
-                  onChange={(e) => {
-                    const formattedPhone = formatPhone(e.target.value)
-                    handleInputChange('contato.telefone', formattedPhone)
-                  }}
+                <label className="block text-xs font-medium text-filemaker-text mb-1">PROFISSÃO</label>
+                <ProfissaoSelect
+                  value={formData.profissao}
+                  onChange={(value) => handleInputChange('profissao', value)}
                   className="filemaker-input w-full"
-                  placeholder="(00) 0000-0000"
-                  maxLength={14}
                 />
               </div>
               <div>
@@ -412,12 +424,20 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
           {/* Convênio e Documentos */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-filemaker-text border-b pb-1">CONVÊNIO E DOCUMENTOS</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="relative">
                 <label className="block text-xs font-medium text-filemaker-text mb-1">CONVÊNIO</label>
                 <ConvenioSelect
                   value={formData.convenio.nome}
                   onChange={(value) => handleInputChange('convenio.nome', value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-filemaker-text mb-1">STATUS</label>
+                <StatusSelect
+                  value={formData.status}
+                  onChange={(value) => handleInputChange('status', value)}
                   className="filemaker-input w-full"
                 />
               </div>

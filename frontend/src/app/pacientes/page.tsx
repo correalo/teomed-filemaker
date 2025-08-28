@@ -28,7 +28,7 @@ export default function PacientesPage() {
   useEffect(() => {
     setMounted(true)
     if (typeof window !== 'undefined') {
-      const API_BASE_URL = 'http://localhost:3005'
+      const API_BASE_URL = 'http://localhost:3004'
       const token = localStorage.getItem('token')
       if (!token) {
         router.push('/')
@@ -235,6 +235,13 @@ export default function PacientesPage() {
         p.profissao?.toLowerCase().includes(filters.profissao.toLowerCase())
       )
       if (profissaoMatch !== -1) return profissaoMatch
+    }
+
+    if (filters.status) {
+      const statusMatch = pacientes.findIndex(p => 
+        p.status?.toLowerCase().includes(filters.status.toLowerCase())
+      )
+      if (statusMatch !== -1) return statusMatch
     }
 
     if (filters.idade) {

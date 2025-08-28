@@ -5,9 +5,6 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PacientesModule } from './pacientes/pacientes.module';
-import { AvaliacoesModule } from './avaliacoes/avaliacoes.module';
-import { EvolucoesModule } from './evolucoes/evolucoes.module';
-import { ExamesPreopModule } from './exames-preop/exames-preop.module';
 import { ReceitasModule } from './receitas/receitas.module';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
@@ -26,9 +23,6 @@ import { AppController } from './app.controller';
     }),
     AuthModule,
     PacientesModule,
-    AvaliacoesModule,
-    EvolucoesModule,
-    ExamesPreopModule,
     ReceitasModule,
   ],
   controllers: [AppController],
