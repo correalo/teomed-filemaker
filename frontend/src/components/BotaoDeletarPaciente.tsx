@@ -20,7 +20,7 @@ export function BotaoDeletarPaciente({ paciente }: Props) {
       setDeleting(true);
 
       // Chame sua API de deleção
-      const res = await fetch(`http://localhost:3004/pacientes/${paciente._id}`, {
+      const res = await fetch(`http://localhost:3005/pacientes/${paciente._id}`, {
         method: "DELETE",
         headers: { 
           "Content-Type": "application/json",

@@ -10,7 +10,6 @@ import ConvenioSelect from './ConvenioSelect'
 import PlanoSelect from './PlanoSelect'
 import ProfissaoSelect from './ProfissaoSelect'
 import StatusSelect from './StatusSelect'
-import TratamentosCard from './TratamentosCard'
 import EmailInput from './EmailInput'
 import WhatsAppButton from './WhatsAppButton'
 import EmailButton from './EmailButton'
@@ -18,6 +17,7 @@ import CPFInput from './CPFInput'
 import { BotaoDeletarPaciente } from './BotaoDeletarPaciente'
 import { useToast } from './Toast'
 import AutocompleteInput from './AutocompleteInput'
+import TratamentosCard from './TratamentosCard'
 
 interface PacienteCardProps {
   paciente: Paciente
@@ -76,7 +76,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
     
     setIsSaving(true)
     try {
-      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}`, {
+      const response = await fetch(`http://localhost:3005/pacientes/${paciente._id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -222,7 +222,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
               onChange={(value) => onSearchFieldChange?.('nome', value)}
               placeholder="Buscar por nome..."
               className={`filemaker-input w-full text-sm sm:text-base bg-orange-50 border-orange-300 focus:border-orange-500`}
-              apiEndpoint="http://localhost:3004/pacientes/autocomplete/nomes"
+              apiEndpoint="http://localhost:3005/pacientes/autocomplete/nomes"
             />
           ) : (
             <input
@@ -1094,79 +1094,24 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
               </div>
             </div>
 
-            <div className="filemaker-section">
-              <h3 className="text-sm font-semibold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">
-                TRATAMENTOS
-              </h3>
-              <div className="space-y-2">
-                {isEditing ? (
-                  <div>
-                    <label className="flex items-center space-x-2 mb-2">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(editedPaciente?.dados_clinicos?.cirurgia_previa)}
-                        onChange={(e) => handleInputChange('dados_clinicos.cirurgia_previa', e.target.checked)}
-                      />
-                      <span className="text-xs font-medium text-filemaker-text">CIRURGIA PRÉVIA</span>
-                    </label>
-                    <div className="space-y-2">
-                      <div>
-                        <label className="block text-xs font-medium text-filemaker-text mb-1">DETALHAMENTO</label>
-                        <input
-                          type="text"
-                          value={editedPaciente?.dados_clinicos?.cir_previa || ''}
-                          onChange={(e) => handleInputChange('dados_clinicos.cir_previa', e.target.value)}
-                          className="filemaker-input w-full text-sm"
-                          style={{ backgroundColor: '#fff' }}
-                          placeholder="Detalhes da cirurgia prévia..."
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-sm space-y-1">
-                    {paciente.dados_clinicos?.cirurgia_previa && (
-                      <div>
-                        <div><strong>Cirurgia Prévia:</strong> Sim</div>
-                        {paciente.dados_clinicos?.cir_previa && (
-                          <div><strong>Detalhamento:</strong> {paciente.dados_clinicos.cir_previa}</div>
-                        )}
-                      </div>
-                    )}
-                    {!paciente.dados_clinicos?.cirurgia_previa && (
-                      <div className="text-gray-500">Nenhuma cirurgia prévia</div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+            <TratamentosCard
+              paciente={isSearchMode ? paciente : (editedPaciente || paciente)}
+              isEditing={isEditing && !isSearchMode}
+              isSearchMode={isSearchMode}
+              searchFields={searchFields}
+              onSearchFieldChange={onSearchFieldChange}
+              onUpdate={(updatedData) => {
+                if (!isSearchMode) {
+                  setEditedPaciente(prev => ({
+                    ...prev,
+                    ...updatedData
+                  } as Paciente));
+                }
+              }}
+            />
           </div>
         </div>
       </div>
-      )}
-
-      {/* Card de Tratamentos */}
-      {!isSearchMode && (
-        <TratamentosCard
-          paciente={paciente}
-          isEditing={isEditing}
-          isSearchMode={isSearchMode}
-          searchFields={searchFields}
-          onSearchFieldChange={onSearchFieldChange}
-          onUpdate={(updatedData) => setEditedPaciente(updatedData as Paciente)}
-        />
-      )}
-
-      {/* Card de Tratamentos - Modo Busca */}
-      {isSearchMode && (
-        <TratamentosCard
-          paciente={paciente}
-          isEditing={false}
-          isSearchMode={isSearchMode}
-          searchFields={searchFields}
-          onSearchFieldChange={onSearchFieldChange}
-          onUpdate={() => {}}
-        />
       )}
     </div>
   )

@@ -13,7 +13,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
   
-  await app.listen(process.env.PORT || 3004);
-  console.log(`Backend running on port ${process.env.PORT || 3004}`);
+  await app.listen(process.env.PORT || 3005);
+  console.log(`Backend running on port ${process.env.PORT || 3005}`);
 }
 bootstrap();

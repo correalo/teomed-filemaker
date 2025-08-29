@@ -12,7 +12,7 @@ interface PortalSectionProps {
 }
 
 const api = axios.create({
-  baseURL: 'http://localhost:3004',
+  baseURL: 'http://localhost:3005',
 })
 
 api.interceptors.request.use((config) => {
@@ -36,16 +36,48 @@ export default function PortalSection({ pacienteId, isSearchMode = false, search
   })
 
   const tabs = [
+    { id: 'evolucoes', label: 'EVOLUÇÕES', color: 'bg-filemaker-blue' },
+    { id: 'avaliacoes', label: 'AVALIAÇÕES', color: 'bg-filemaker-green' },
+    { id: 'exames', label: 'EXAMES PRÉ-OP', color: 'bg-filemaker-purple' },
     { id: 'receitas', label: 'RECEITAS', color: 'bg-filemaker-red' },
   ]
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'evolucoes':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">EVOLUÇÕES</h3>
+            <div className="text-center py-8 text-gray-500">
+              Módulo de evoluções em desenvolvimento
+            </div>
+          </div>
+        )
+
+      case 'avaliacoes':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold mb-3 bg-filemaker-green text-white px-2 py-1 rounded">AVALIAÇÕES</h3>
+            <div className="text-center py-8 text-gray-500">
+              Módulo de avaliações em desenvolvimento
+            </div>
+          </div>
+        )
+
+      case 'exames':
+        return (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold mb-3 bg-filemaker-purple text-white px-2 py-1 rounded">EXAMES PRÉ-OP</h3>
+            <div className="text-center py-8 text-gray-500">
+              Módulo de exames pré-operatórios em desenvolvimento
+            </div>
+          </div>
+        )
 
       case 'receitas':
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-filemaker-header">Receitas Médicas</h3>
+            <h3 className="text-sm font-semibold mb-3 bg-filemaker-red text-white px-2 py-1 rounded">RECEITAS</h3>
             {receitas?.length > 0 ? (
               <div className="space-y-3">
                 {receitas.map((receita: any, index: number) => (
@@ -110,9 +142,24 @@ export default function PortalSection({ pacienteId, isSearchMode = false, search
 
   return (
     <div className="space-y-4">
+      {/* Tabs Navigation */}
+      <div className="flex border-b border-gray-200 mb-6">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 text-sm font-medium ${activeTab === tab.id 
+              ? `${tab.color} text-white` 
+              : 'text-filemaker-text hover:bg-gray-100'}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* Clinical Cards - Always visible in search mode */}
       {isSearchMode && (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Avaliação Clínica */}
           <div className="filemaker-card p-4">
             <h3 className="text-sm font-bold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">
@@ -333,7 +380,7 @@ export default function PortalSection({ pacienteId, isSearchMode = false, search
             </div>
           </div>
 
-          {/* Medicamentos Pré-Op */}
+          {/* Medicamentos Pré-Op - Removed duplicate fields */}
           <div className="filemaker-card p-4">
             <h3 className="text-sm font-bold mb-3 bg-filemaker-orange text-white px-2 py-1 rounded">
               MEDICAMENTOS PRÉ-OP
@@ -364,73 +411,13 @@ export default function PortalSection({ pacienteId, isSearchMode = false, search
             </div>
           </div>
 
-          {/* Tratamentos */}
-          <div className="filemaker-card p-4">
-            <h3 className="text-sm font-bold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">
-              TRATAMENTOS
-            </h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-filemaker-text mb-1">DATA</label>
-                <input
-                  type="date"
-                  value={searchFields.data_cirurgia || ''}
-                  onChange={(e) => onSearchFieldChange?.('data_cirurgia', e.target.value)}
-                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
-                  style={{ backgroundColor: '#fef3e2' }}
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-filemaker-text mb-1">LOCAL</label>
-                <input
-                  type="text"
-                  value={searchFields.local_cirurgia || ''}
-                  onChange={(e) => onSearchFieldChange?.('local_cirurgia', e.target.value)}
-                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
-                  style={{ backgroundColor: '#fef3e2' }}
-                  placeholder="Buscar local..."
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-filemaker-text mb-1">TRATAMENTO</label>
-                <input
-                  type="text"
-                  value={searchFields.tratamento || ''}
-                  onChange={(e) => onSearchFieldChange?.('tratamento', e.target.value)}
-                  className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
-                  style={{ backgroundColor: '#fef3e2' }}
-                  placeholder="Buscar tratamento..."
-                />
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
-      {/* Original Portal Section - Hidden in search mode */}
+      {/* Tab Content - Hidden in search mode */}
       {!isSearchMode && (
-        <div className="filemaker-card">
-          {/* Tabs */}
-          <div className="flex border-b border-filemaker-border">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.id
-                    ? `${tab.color} text-white border-transparent`
-                    : 'text-filemaker-text hover:text-filemaker-header border-transparent hover:border-filemaker-border'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Content */}
-          <div className="p-6">
-            {renderContent()}
-          </div>
+        <div className="mt-4">
+          {renderContent()}
         </div>
       )}
     </div>
