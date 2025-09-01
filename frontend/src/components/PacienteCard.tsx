@@ -17,7 +17,6 @@ import CPFInput from './CPFInput'
 import { BotaoDeletarPaciente } from './BotaoDeletarPaciente'
 import { useToast } from './Toast'
 import AutocompleteInput from './AutocompleteInput'
-import TratamentosCard from './TratamentosCard'
 
 interface PacienteCardProps {
   paciente: Paciente
@@ -57,13 +56,32 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
       apneia: paciente.dados_clinicos?.apneia || false,
       artropatias: paciente.dados_clinicos?.artropatias || false,
       ccc: paciente.dados_clinicos?.ccc || false,
-      esteatose: paciente.dados_clinicos?.esteatose || false
+      esteatose: paciente.dados_clinicos?.esteatose || false,
+      hernia_hiato: paciente.dados_clinicos?.hernia_hiato || false,
+      refluxo: paciente.dados_clinicos?.refluxo || false,
+      hernia_incisional: paciente.dados_clinicos?.hernia_incisional || false
+    }
+    
+    // Garantir que cirurgia exista e que seus campos nunca sejam undefined
+    const cirurgia = {
+      // Copiamos todos os dados de cirurgia existentes
+      ...(paciente.cirurgia || {}),
+      // Garantimos que os campos tenham valores padrão
+      data: paciente.cirurgia?.data || '',
+      local: paciente.cirurgia?.local || '',
+      tratamento: paciente.cirurgia?.tratamento || '',
+      tipo: paciente.cirurgia?.tipo || '',
+      petersenFechado: paciente.cirurgia?.petersenFechado || false,
+      tamanho_alcas: paciente.cirurgia?.tamanho_alcas || '',
+      data_segunda_cirurgia: paciente.cirurgia?.data_segunda_cirurgia || '',
+      segunda_cirurgia: paciente.cirurgia?.segunda_cirurgia || ''
     }
     
     // Criar um objeto editedPaciente com todos os campos necessários inicializados
     setEditedPaciente({ 
       ...paciente,
-      dados_clinicos: dadosClinicos
+      dados_clinicos: dadosClinicos,
+      cirurgia: cirurgia
     })
     
     setIsEditing(true)
@@ -1261,24 +1279,230 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
               </div>
             </div>
 
-            <TratamentosCard
-              paciente={isSearchMode ? paciente : (editedPaciente as typeof paciente || paciente)}
-              isEditing={isEditing && !isSearchMode}
-              isSearchMode={isSearchMode}
-              searchFields={searchFields}
-              onSearchFieldChange={onSearchFieldChange}
-              onUpdate={(updatedData) => {
-                if (!isSearchMode) {
-                  setEditedPaciente(prev => {
-                    if (!prev) return updatedData;
-                    return {
-                      ...prev,
-                      ...updatedData
-                    };
-                  });
-                }
-              }}
-            />
+            <div className="filemaker-section">
+              <h3 className="text-sm font-semibold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">
+                TRATAMENTOS
+              </h3>
+              <div className="space-y-4">
+                {/* Linha 1: Data Cirurgia e Local */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-filemaker-text mb-1">DATA CIRURGIA</label>
+                    <input
+                      type="date"
+                      value={isSearchMode ? (searchFields.data_cirurgia || '') : (() => {
+                        const data = isEditing 
+                          ? editedPaciente?.cirurgia?.data 
+                          : paciente.cirurgia?.data;
+                        if (!data) return '';
+                        return new Date(data).toISOString().split('T')[0];
+                      })()}
+                      readOnly={!isEditing && !isSearchMode}
+                      onChange={(e) => {
+                        if (isSearchMode) {
+                          onSearchFieldChange?.('data_cirurgia', e.target.value)
+                        } else {
+                          const isoDate = e.target.value ? new Date(e.target.value).toISOString() : '';
+                          handleInputChange('cirurgia.data', isoDate)
+                        }
+                      }}
+                      className={`filemaker-input w-full text-sm sm:text-base ${
+                        isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''
+                      }`}
+                      style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
+                      placeholder={isSearchMode ? "Buscar por data..." : ""}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-filemaker-text mb-1">LOCAL DA CIRURGIA</label>
+                    <select
+                      value={isSearchMode ? (searchFields.local_cirurgia || '') : (isEditing ? (editedPaciente?.cirurgia?.local || '') : (paciente.cirurgia?.local || ''))}
+                      disabled={!isEditing && !isSearchMode}
+                      onChange={(e) => {
+                        if (isSearchMode) {
+                          onSearchFieldChange?.('local_cirurgia', e.target.value)
+                        } else {
+                          handleInputChange('cirurgia.local', e.target.value)
+                        }
+                      }}
+                      className={`filemaker-input w-full text-sm sm:text-base ${
+                        isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''
+                      }`}
+                      style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="SANTA CATARINA">SANTA CATARINA</option>
+                      <option value="BLANCHO">BLANCHO</option>
+                      <option value="CHAOC -P3">CHAOC -P3</option>
+                      <option value="IGESP">IGESP</option>
+                      <option value="METROPOLITANO">METROPOLITANO</option>
+                      <option value="HCOR">HCOR</option>
+                      <option value="SANTA RITA">SANTA RITA</option>
+                      <option value="SÃO CAMILO">SÃO CAMILO</option>
+                      <option value="HIAE">HIAE</option>
+                      <option value="SÃO CAMILO-IPIRANGA">SÃO CAMILO-IPIRANGA</option>
+                      <option value="BANDEIRANTES">BANDEIRANTES</option>
+                      <option value="SANTA PAULA">SANTA PAULA</option>
+                      <option value="SAMARITANO">SAMARITANO</option>
+                      <option value="LEFORTE MORUMBI">LEFORTE MORUMBI</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Linha 2: Tratamento e Tipo de Cirurgia */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-filemaker-text mb-1">TRATAMENTO</label>
+                    <select
+                      value={isSearchMode ? (searchFields.tratamento || '') : (isEditing ? (editedPaciente?.cirurgia?.tratamento || '') : (paciente.cirurgia?.tratamento || ''))}
+                      disabled={!isEditing && !isSearchMode}
+                      onChange={(e) => {
+                        if (isSearchMode) {
+                          onSearchFieldChange?.('tratamento', e.target.value)
+                        } else {
+                          handleInputChange('cirurgia.tratamento', e.target.value)
+                        }
+                      }}
+                      className={`filemaker-input w-full text-sm sm:text-base ${
+                        isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''
+                      }`}
+                      style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="OBESIDADE">OBESIDADE</option>
+                      <option value="DIABETES">DIABETES</option>
+                      <option value="REFLUXO">REFLUXO</option>
+                      <option value="HERNIA">HÉRNIA</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-filemaker-text mb-1">TIPO DE CIRURGIA</label>
+                    <select
+                      value={isSearchMode ? (searchFields.tipo_cirurgia || '') : (isEditing ? (editedPaciente?.cirurgia?.tipo || '') : (paciente.cirurgia?.tipo || ''))}
+                      disabled={!isEditing && !isSearchMode}
+                      onChange={(e) => {
+                        if (isSearchMode) {
+                          onSearchFieldChange?.('tipo_cirurgia', e.target.value)
+                        } else {
+                          handleInputChange('cirurgia.tipo', e.target.value)
+                        }
+                      }}
+                      className={`filemaker-input w-full text-sm sm:text-base ${
+                        isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''
+                      }`}
+                      style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="BYPASS">BYPASS</option>
+                      <option value="SLEEVE">SLEEVE</option>
+                      <option value="BANDA">BANDA</option>
+                      <option value="REVISIONAL">REVISIONAL</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Linha 3: Segunda Cirurgia e Data Segunda Cirurgia */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-filemaker-text mb-1">SEGUNDA CIRURGIA</label>
+                    <input
+                      type="text"
+                      value={isSearchMode ? (searchFields.segunda_cirurgia || '') : (isEditing ? (editedPaciente?.cirurgia?.segunda_cirurgia || '') : (paciente.cirurgia?.segunda_cirurgia || ''))}
+                      readOnly={!isEditing && !isSearchMode}
+                      onChange={(e) => {
+                        if (isSearchMode) {
+                          onSearchFieldChange?.('segunda_cirurgia', e.target.value)
+                        } else {
+                          handleInputChange('cirurgia.segunda_cirurgia', e.target.value)
+                        }
+                      }}
+                      className={`filemaker-input w-full text-sm sm:text-base ${
+                        isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''
+                      }`}
+                      style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
+                      placeholder={isSearchMode ? "Buscar por segunda cirurgia..." : ""}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-filemaker-text mb-1">DATA SEGUNDA CIRURGIA</label>
+                    <input
+                      type="date"
+                      value={isSearchMode ? (searchFields.data_segunda_cirurgia || '') : (() => {
+                        const data = isEditing 
+                          ? editedPaciente?.cirurgia?.data_segunda_cirurgia 
+                          : paciente.cirurgia?.data_segunda_cirurgia;
+                        if (!data) return '';
+                        return new Date(data).toISOString().split('T')[0];
+                      })()}
+                      readOnly={!isEditing && !isSearchMode}
+                      onChange={(e) => {
+                        if (isSearchMode) {
+                          onSearchFieldChange?.('data_segunda_cirurgia', e.target.value)
+                        } else {
+                          const isoDate = e.target.value ? new Date(e.target.value).toISOString() : '';
+                          handleInputChange('cirurgia.data_segunda_cirurgia', isoDate)
+                        }
+                      }}
+                      className={`filemaker-input w-full text-sm sm:text-base ${
+                        isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''
+                      }`}
+                      style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Linha 4: Petersen Fechado e Tamanho das Alças */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-filemaker-text mb-1">PETERSEN FECHADO</label>
+                    <select
+                      value={isSearchMode ? (searchFields.petersen_fechado || '') : (isEditing ? (editedPaciente?.cirurgia?.petersenFechado ? 'SIM' : 'NÃO') : (paciente.cirurgia?.petersenFechado ? 'SIM' : 'NÃO'))}
+                      disabled={!isEditing && !isSearchMode}
+                      onChange={(e) => {
+                        if (isSearchMode) {
+                          onSearchFieldChange?.('petersen_fechado', e.target.value)
+                        } else {
+                          handleInputChange('cirurgia.petersenFechado', e.target.value === 'SIM')
+                        }
+                      }}
+                      className={`filemaker-input w-full text-sm sm:text-base ${
+                        isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''
+                      }`}
+                      style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="SIM">SIM</option>
+                      <option value="NÃO">NÃO</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-filemaker-text mb-1">TAMANHO DAS ALÇAS</label>
+                    <select
+                      value={isSearchMode ? (searchFields.tamanho_alcas || '') : (isEditing ? (editedPaciente?.cirurgia?.tamanho_alcas || '') : (paciente.cirurgia?.tamanho_alcas || ''))}
+                      disabled={!isEditing && !isSearchMode}
+                      onChange={(e) => {
+                        if (isSearchMode) {
+                          onSearchFieldChange?.('tamanho_alcas', e.target.value)
+                        } else {
+                          handleInputChange('cirurgia.tamanho_alcas', e.target.value)
+                        }
+                      }}
+                      className={`filemaker-input w-full text-sm sm:text-base ${
+                        isSearchMode ? 'bg-orange-50 border-orange-300 focus:border-orange-500' : ''
+                      }`}
+                      style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="50/150">50/150</option>
+                      <option value="75/150">75/150</option>
+                      <option value="100/150">100/150</option>
+                      <option value="150/150">150/150</option>
+                      <option value="OUTRO">OUTRO</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
