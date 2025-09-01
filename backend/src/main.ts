@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,6 +13,19 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
+  
+  // Configuração do Swagger
+  const config = new DocumentBuilder()
+    .setTitle('TEOMED API')
+    .setDescription('API do sistema TEOMED para gerenciamento de prontuários médicos')
+    .setVersion('1.0')
+    .addTag('auth', 'Endpoints de autenticação')
+    .addTag('pacientes', 'Endpoints de gerenciamento de pacientes')
+    .addTag('receitas', 'Endpoints de gerenciamento de receitas')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
   
   await app.listen(process.env.PORT || 3005);
   console.log(`Backend running on port ${process.env.PORT || 3005}`);
