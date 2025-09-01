@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Paciente } from '../types/paciente'
-import { formatPeso, formatAltura, displayPeso, displayAltura, validatePeso, validateAltura, calculateIMC } from '@/utils/formatters'
+import { applyHeightMask, applyWeightMask, calculateIMC, displayAltura, displayPeso, formatAltura, formatPeso, validateAltura, validatePeso } from "@/utils/formatters";
 import { fetchAddressByCep, formatCep, formatPhone, formatCellPhone, formatRG, formatCPF, formatEmail, validateEmail, validateAndFormatCPF } from '../utils/viaCep'
 import ConvenioSelect from './ConvenioSelect'
 import PlanoSelect from './PlanoSelect'
@@ -42,8 +42,32 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
   }
 
   const handleEdit = () => {
-    setEditedPaciente({ ...paciente })
+    console.log('Ativando modo de edição')
+    // Garantir que dados_clinicos exista e que seus campos nunca sejam undefined
+    const dadosClinicos = {
+      // Primeiro copiamos todos os dados clínicos existentes
+      ...(paciente.dados_clinicos || {}),
+      // Depois garantimos que os campos críticos tenham valores padrão
+      peso: parseFloat(paciente.dados_clinicos?.peso?.toString() || '0') || 0,
+      altura: parseFloat(paciente.dados_clinicos?.altura?.toString() || '0') || 0,
+      imc: parseFloat(paciente.dados_clinicos?.imc?.toString() || '0') || 0,
+      has: paciente.dados_clinicos?.has || false,
+      diabetes: paciente.dados_clinicos?.diabetes || false,
+      dislipidemia: paciente.dados_clinicos?.dislipidemia || false,
+      apneia: paciente.dados_clinicos?.apneia || false,
+      artropatias: paciente.dados_clinicos?.artropatias || false,
+      ccc: paciente.dados_clinicos?.ccc || false,
+      esteatose: paciente.dados_clinicos?.esteatose || false
+    }
+    
+    // Criar um objeto editedPaciente com todos os campos necessários inicializados
+    setEditedPaciente({ 
+      ...paciente,
+      dados_clinicos: dadosClinicos
+    })
+    
     setIsEditing(true)
+    console.log('isEditing após setIsEditing:', true)
   }
 
   const handleCancel = () => {
@@ -119,7 +143,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
     if (!editedPaciente) return
     
     // Aplicar trim e maiúsculo apenas no campo nome
-    const processedValue = field === 'nome' ? value.trim().toUpperCase() : value
+    let processedValue = field === 'nome' ? value.trim().toUpperCase() : value
     
     const fieldParts = field.split('.')
     if (fieldParts.length === 1) {
@@ -134,13 +158,63 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
     } else if (fieldParts.length === 2) {
       const [parentField, childField] = fieldParts
       const parentObject = editedPaciente[parentField as keyof Paciente] || {}
-      setEditedPaciente({
+      
+      // Converter valores numéricos para dados_clinicos
+      if (parentField === 'dados_clinicos') {
+        if (childField === 'peso' || childField === 'altura' || childField === 'imc') {
+          // Converter string para número
+          processedValue = parseFloat(processedValue) || 0
+        }
+      }
+      
+      // Criar o novo objeto paciente com o campo atualizado
+      const newEditedPaciente = {
         ...editedPaciente,
         [parentField]: {
           ...(typeof parentObject === 'object' ? parentObject : {}),
           [childField]: processedValue
         }
-      })
+      }
+      
+      // Calcular o IMC automaticamente se peso ou altura foram alterados
+      if (parentField === 'dados_clinicos' && (childField === 'peso' || childField === 'altura')) {
+        const dadosClinicos = newEditedPaciente.dados_clinicos || {}
+        // Definindo o tipo para evitar erro de propriedade não existente
+        const dadosClinicosTyped = dadosClinicos as { 
+          peso?: string | number, 
+          altura?: string | number, 
+          imc?: string | number,
+          alergias?: string[],
+          has?: boolean,
+          diabetes?: boolean,
+          tabagismo?: boolean,
+          etilismo?: boolean,
+          dislipidemia?: boolean,
+          medicamento?: string,
+          dosagem?: string
+        }
+        const peso = dadosClinicosTyped.peso?.toString() || ''
+        const altura = dadosClinicosTyped.altura?.toString() || ''
+        
+        if (peso && altura) {
+          const imc = calculateIMC(peso, altura)
+          // Converte o IMC para número para evitar erro de tipo
+          const imcNumber = parseFloat(imc)
+          
+          // Usa type assertion para evitar erros de tipo
+          // Isso é seguro porque estamos apenas atualizando o IMC mantendo os outros campos
+          const updatedDadosClinicos = {
+            ...dadosClinicos,
+            imc: imcNumber
+          }
+          
+          // Atribui os dados clínicos atualizados usando type assertion
+          newEditedPaciente.dados_clinicos = updatedDadosClinicos as any
+          console.log('IMC calculado:', imc, 'Peso:', peso, 'Altura:', altura)
+        }
+      }
+      
+      setEditedPaciente(newEditedPaciente)
     } else if (fieldParts.length === 3) {
       const [parentField, middleField, childField] = fieldParts
       const parentObject = editedPaciente[parentField as keyof Paciente] || {}
@@ -169,6 +243,9 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
   }
 
   const currentData = isEditing ? editedPaciente : paciente
+  
+  // Log para depuração
+  console.log('Estado atual:', { isEditing, isSearchMode })
 
   return (
     <div className="filemaker-card p-3 sm:p-4 lg:p-6">
@@ -797,80 +874,170 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <label className="block text-xs text-filemaker-text mb-1">PESO</label>
-                    <input
-                      type="text"
-                      value={isEditing ? (editedPaciente?.dados_clinicos?.peso || '') : displayPeso(String(paciente.dados_clinicos?.peso || ''))}
-                      readOnly={!isEditing}
-                      onChange={(e) => {
-                        const formatted = formatPeso(e.target.value)
-                        const validation = validatePeso(formatted)
-                        
-                        if (!validation.isValid && formatted) {
-                          setValidationErrors(prev => ({ ...prev, peso: validation.message || '' }))
-                        } else {
-                          setValidationErrors(prev => ({ ...prev, peso: '' }))
-                        }
-                        
-                        handleInputChange('dados_clinicos.peso', formatted)
-                        
-                        // Calcular IMC automaticamente
-                        const altura = editedPaciente?.dados_clinicos?.altura || ''
-                        if (altura) {
-                          const imc = calculateIMC(formatted, String(altura))
-                          handleInputChange('dados_clinicos.imc', imc)
-                        }
-                      }}
-                      className="filemaker-input w-full text-sm"
-                      style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
-                      placeholder={isEditing ? "000.0" : ""}
-                    />
+                    <div className="flex items-stretch">
+                      <div className="flex-grow">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            className="bg-white w-full rounded-l font-mono"
+                            defaultValue={applyWeightMask(editedPaciente?.dados_clinicos?.peso)}
+                            onChange={(e) => {
+                              // Pega apenas os dígitos da entrada (sem ponto)
+                              const inputValue = e.target.value.replace(/[^0-9]/g, '')
+                              
+                              // Aplica a máscara para exibição
+                              const masked = applyWeightMask(inputValue)
+                              e.target.value = masked
+                              
+                              // Posiciona o cursor após o último dígito ou após o ponto se não houver dígitos
+                              const cursorPos = masked.lastIndexOf('.') + 2
+                              e.target.setSelectionRange(cursorPos, cursorPos)
+                              
+                              // Formata o valor para armazenamento com ponto decimal
+                              let formattedValue = ''
+                              if (inputValue.length > 0) {
+                                const intPart = inputValue.slice(0, -1) || '0'
+                                const decPart = inputValue.slice(-1)
+                                formattedValue = `${intPart}.${decPart}`
+                              }
+                              
+                              const validation = validatePeso(formattedValue)
+                              
+                              if (!validation.isValid && formattedValue) {
+                                setValidationErrors(prev => ({ ...prev, peso: validation.message || '' }))
+                              } else {
+                                setValidationErrors(prev => ({ ...prev, peso: '' }))
+                              }
+                              
+                              // Converter para número antes de passar para handleInputChange
+                              handleInputChange('dados_clinicos.peso', formattedValue)
+                            }}
+                            onFocus={(e) => {
+                              // Posiciona o cursor no final do texto
+                              const val = e.target.value
+                              e.target.value = ''
+                              e.target.value = val
+                            }}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            className="bg-gray-100 cursor-not-allowed w-full rounded-l"
+                            value={displayPeso(paciente.dados_clinicos?.peso?.toString() || '')}
+                            readOnly
+                          />
+                        )}
+                      </div>
+                      <span className="bg-gray-200 text-gray-700 text-xs px-3 py-2 rounded-r border border-l-0 border-gray-300 flex items-center font-medium whitespace-nowrap">
+                        kg
+                      </span>
+                    </div>
                     {validationErrors.peso && (
                       <div className="text-red-500 text-xs mt-1">{validationErrors.peso}</div>
                     )}
                   </div>
                   <div>
                     <label className="block text-xs text-filemaker-text mb-1">ALTURA</label>
-                    <input
-                      type="text"
-                      value={isEditing ? (editedPaciente?.dados_clinicos?.altura || '') : displayAltura(String(paciente.dados_clinicos?.altura || ''))}
-                      readOnly={!isEditing}
-                      onChange={(e) => {
-                        const formatted = formatAltura(e.target.value)
-                        const validation = validateAltura(formatted)
-                        
-                        if (!validation.isValid && formatted) {
-                          setValidationErrors(prev => ({ ...prev, altura: validation.message || '' }))
-                        } else {
-                          setValidationErrors(prev => ({ ...prev, altura: '' }))
-                        }
-                        
-                        handleInputChange('dados_clinicos.altura', formatted)
-                        
-                        // Calcular IMC automaticamente
-                        const peso = editedPaciente?.dados_clinicos?.peso || ''
-                        if (peso) {
-                          const imc = calculateIMC(String(peso), formatted)
-                          handleInputChange('dados_clinicos.imc', imc)
-                        }
-                      }}
-                      className="filemaker-input w-full text-sm"
-                      style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
-                      placeholder={isEditing ? "0.00" : ""}
-                    />
+                    <div className="flex items-stretch">
+                      <div className="flex-grow">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            name="altura"
+                            id="altura"
+                            className="bg-white w-full rounded-l font-mono"
+                            defaultValue={applyHeightMask(editedPaciente?.dados_clinicos?.altura)}
+                            onChange={(e) => {
+                              // Pega apenas os dígitos da entrada (sem ponto)
+                              const inputValue = e.target.value.replace(/[^0-9]/g, '')
+                              
+                              // Aplica a máscara para exibição
+                              const masked = applyHeightMask(inputValue)
+                              e.target.value = masked
+                              
+                              // Posiciona o cursor após o último dígito ou após o ponto se não houver dígitos
+                              const cursorPos = masked.lastIndexOf(inputValue.slice(-1))
+                              if (cursorPos >= 0) {
+                                e.target.setSelectionRange(cursorPos + 1, cursorPos + 1)
+                              } else {
+                                e.target.setSelectionRange(2, 2) // Posiciona após o ponto
+                              }
+                              
+                              // Formata o valor para armazenamento (com ponto decimal)
+                              let formattedValue = ''
+                              
+                              if (inputValue) {
+                                if (inputValue.length === 1) {
+                                  formattedValue = `0.${inputValue}0`
+                                } else if (inputValue.length === 2) {
+                                  formattedValue = `0.${inputValue}`
+                                } else {
+                                  const intPart = inputValue.slice(0, -2) || '0'
+                                  const decPart = inputValue.slice(-2)
+                                  formattedValue = `${intPart}.${decPart}`
+                                }
+                              }
+                              
+                              // Normaliza valores como 81.78 para 1.78
+                              const numValue = parseFloat(formattedValue)
+                              if (numValue > 10) {
+                                formattedValue = (numValue / 100).toFixed(2)
+                              }
+                              
+                              // Validação
+                              const validation = validateAltura(formattedValue)
+                              if (!validation.isValid) {
+                                setValidationErrors(prev => ({ ...prev, altura: validation.message || '' }))
+                              } else {
+                                setValidationErrors(prev => ({ ...prev, altura: '' }))
+                              }
+                              
+                              // Converter para número antes de passar para handleInputChange
+                              handleInputChange('dados_clinicos.altura', formattedValue)
+                            }}
+                          />
+                        ) : (
+                          <input
+                            type="text"
+                            className="bg-gray-100 cursor-not-allowed w-full rounded-l"
+                            value={displayAltura(paciente.dados_clinicos?.altura?.toString() || '')}
+                            readOnly
+                          />
+                        )}
+                      </div>
+                      <span className="bg-gray-200 text-gray-700 text-xs px-3 py-2 rounded-r border border-l-0 border-gray-300 flex items-center font-medium whitespace-nowrap">
+                        m
+                      </span>
+                    </div>
                     {validationErrors.altura && (
                       <div className="text-red-500 text-xs mt-1">{validationErrors.altura}</div>
                     )}
                   </div>
                   <div>
                     <label className="block text-xs text-filemaker-text mb-1">IMC</label>
-                    <input
-                      type="text"
-                      value={isEditing ? (editedPaciente?.dados_clinicos?.imc || '') : (paciente.dados_clinicos?.imc || '')}
-                      readOnly={true}
-                      className="filemaker-input w-full text-sm"
-                      style={{ backgroundColor: '#f0f0f0', color: '#666' }}
-                      placeholder="Calculado automaticamente"
-                    />
+                    <div className="flex items-stretch">
+                      <div className="flex-grow">
+                        <input
+                          type="text"
+                          value={isEditing 
+                            ? (editedPaciente?.dados_clinicos?.imc || calculateIMC(
+                                editedPaciente?.dados_clinicos?.peso?.toString() || '', 
+                                editedPaciente?.dados_clinicos?.altura?.toString() || ''
+                              ) || '') 
+                            : (paciente.dados_clinicos?.imc || calculateIMC(
+                                paciente.dados_clinicos?.peso?.toString() || '', 
+                                paciente.dados_clinicos?.altura?.toString() || ''
+                              ) || '')}
+                          readOnly={true}
+                          className="filemaker-input w-full text-sm rounded-l"
+                          style={{ backgroundColor: '#f0f0f0', color: '#666' }}
+                          placeholder="Calculado automaticamente"
+                        />
+                      </div>
+                      <span className="bg-gray-200 text-gray-700 text-xs px-3 py-2 rounded-r border border-l-0 border-gray-300 flex items-center font-medium whitespace-nowrap">
+                        kg/m²
+                      </span>
+                    </div>
                   </div>
               </div>
               
@@ -879,7 +1046,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                   <input 
                     type="checkbox" 
                     checked={isEditing ? (editedPaciente?.dados_clinicos?.has || false) : (paciente.dados_clinicos?.has || false)} 
-                    readOnly={!isEditing}
+                    disabled={!isEditing}
                     onChange={(e) => handleInputChange('dados_clinicos.has', e.target.checked)}
                   />
                   <span>HAS</span>
@@ -888,7 +1055,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                   <input 
                     type="checkbox" 
                     checked={isEditing ? (editedPaciente?.dados_clinicos?.diabetes || false) : (paciente.dados_clinicos?.diabetes || false)} 
-                    readOnly={!isEditing}
+                    disabled={!isEditing}
                     onChange={(e) => handleInputChange('dados_clinicos.diabetes', e.target.checked)}
                   />
                   <span>DIABETES</span>
@@ -897,7 +1064,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                   <input 
                     type="checkbox" 
                     checked={isEditing ? (editedPaciente?.dados_clinicos?.dislipidemia || false) : (paciente.dados_clinicos?.dislipidemia || false)} 
-                    readOnly={!isEditing}
+                    disabled={!isEditing}
                     onChange={(e) => handleInputChange('dados_clinicos.dislipidemia', e.target.checked)}
                   />
                   <span>DISLIPIDEMIA</span>
@@ -906,7 +1073,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                   <input 
                     type="checkbox" 
                     checked={isEditing ? (editedPaciente?.dados_clinicos?.apneia || false) : (paciente.dados_clinicos?.apneia || false)} 
-                    readOnly={!isEditing}
+                    disabled={!isEditing}
                     onChange={(e) => handleInputChange('dados_clinicos.apneia', e.target.checked)}
                   />
                   <span>APNÉIA</span>
@@ -915,7 +1082,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                   <input 
                     type="checkbox" 
                     checked={isEditing ? (editedPaciente?.dados_clinicos?.artropatias || false) : (paciente.dados_clinicos?.artropatias || false)} 
-                    readOnly={!isEditing}
+                    disabled={!isEditing}
                     onChange={(e) => handleInputChange('dados_clinicos.artropatias', e.target.checked)}
                   />
                   <span>ARTROPATIAS</span>
@@ -924,7 +1091,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                   <input 
                     type="checkbox" 
                     checked={isEditing ? (editedPaciente?.dados_clinicos?.ccc || false) : (paciente.dados_clinicos?.ccc || false)} 
-                    readOnly={!isEditing}
+                    disabled={!isEditing}
                     onChange={(e) => handleInputChange('dados_clinicos.ccc', e.target.checked)}
                   />
                   <span>CCC</span>
@@ -933,7 +1100,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                   <input 
                     type="checkbox" 
                     checked={isEditing ? (editedPaciente?.dados_clinicos?.esteatose || false) : (paciente.dados_clinicos?.esteatose || false)} 
-                    readOnly={!isEditing}
+                    disabled={!isEditing}
                     onChange={(e) => handleInputChange('dados_clinicos.esteatose', e.target.checked)}
                   />
                   <span>ESTEATOSE</span>
@@ -942,7 +1109,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                   <input 
                     type="checkbox" 
                     checked={isEditing ? (editedPaciente?.dados_clinicos?.hernia_hiato || false) : (paciente.dados_clinicos?.hernia_hiato || false)} 
-                    readOnly={!isEditing}
+                    disabled={!isEditing}
                     onChange={(e) => handleInputChange('dados_clinicos.hernia_hiato', e.target.checked)}
                   />
                   <span>HÉRNIA DE HIATO</span>
@@ -951,7 +1118,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                   <input 
                     type="checkbox" 
                     checked={isEditing ? (editedPaciente?.dados_clinicos?.refluxo || false) : (paciente.dados_clinicos?.refluxo || false)} 
-                    readOnly={!isEditing}
+                    disabled={!isEditing}
                     onChange={(e) => handleInputChange('dados_clinicos.refluxo', e.target.checked)}
                   />
                   <span>REFLUXO</span>
@@ -960,7 +1127,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                   <input 
                     type="checkbox" 
                     checked={isEditing ? (editedPaciente?.dados_clinicos?.hernia_incisional || false) : (paciente.dados_clinicos?.hernia_incisional || false)} 
-                    readOnly={!isEditing}
+                    disabled={!isEditing}
                     onChange={(e) => handleInputChange('dados_clinicos.hernia_incisional', e.target.checked)}
                   />
                   <span>HÉRNIA INCISIONAL</span>
@@ -988,7 +1155,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                       <input 
                         type="checkbox" 
                         checked={isEditing ? (editedPaciente?.antecedentes?.[tipo as keyof typeof editedPaciente.antecedentes]?.dm || false) : (paciente.antecedentes?.[tipo as keyof typeof paciente.antecedentes]?.dm || false)} 
-                        readOnly={!isEditing}
+                        disabled={!isEditing}
                         onChange={(e) => handleInputChange(`antecedentes.${tipo}.dm`, e.target.checked)}
                       />
                       <span>DM</span>
@@ -997,7 +1164,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                       <input 
                         type="checkbox" 
                         checked={isEditing ? (editedPaciente?.antecedentes?.[tipo as keyof typeof editedPaciente.antecedentes]?.has || false) : (paciente.antecedentes?.[tipo as keyof typeof paciente.antecedentes]?.has || false)} 
-                        readOnly={!isEditing}
+                        disabled={!isEditing}
                         onChange={(e) => handleInputChange(`antecedentes.${tipo}.has`, e.target.checked)}
                       />
                       <span>HAS</span>
@@ -1006,7 +1173,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                       <input 
                         type="checkbox" 
                         checked={isEditing ? (editedPaciente?.antecedentes?.[tipo as keyof typeof editedPaciente.antecedentes]?.iam || false) : (paciente.antecedentes?.[tipo as keyof typeof paciente.antecedentes]?.iam || false)} 
-                        readOnly={!isEditing}
+                        disabled={!isEditing}
                         onChange={(e) => handleInputChange(`antecedentes.${tipo}.iam`, e.target.checked)}
                       />
                       <span>IAM</span>
@@ -1015,7 +1182,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                       <input 
                         type="checkbox" 
                         checked={isEditing ? (editedPaciente?.antecedentes?.[tipo as keyof typeof editedPaciente.antecedentes]?.avc || false) : (paciente.antecedentes?.[tipo as keyof typeof paciente.antecedentes]?.avc || false)} 
-                        readOnly={!isEditing}
+                        disabled={!isEditing}
                         onChange={(e) => handleInputChange(`antecedentes.${tipo}.avc`, e.target.checked)}
                       />
                       <span>AVC</span>
@@ -1024,7 +1191,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                       <input 
                         type="checkbox" 
                         checked={isEditing ? (editedPaciente?.antecedentes?.[tipo as keyof typeof editedPaciente.antecedentes]?.dislipidemia || false) : (paciente.antecedentes?.[tipo as keyof typeof paciente.antecedentes]?.dislipidemia || false)} 
-                        readOnly={!isEditing}
+                        disabled={!isEditing}
                         onChange={(e) => handleInputChange(`antecedentes.${tipo}.dislipidemia`, e.target.checked)}
                       />
                       <span>DISLIPIDEMIA</span>
@@ -1033,7 +1200,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
                       <input 
                         type="checkbox" 
                         checked={isEditing ? (editedPaciente?.antecedentes?.[tipo as keyof typeof editedPaciente.antecedentes]?.neoplasias || false) : (paciente.antecedentes?.[tipo as keyof typeof paciente.antecedentes]?.neoplasias || false)} 
-                        readOnly={!isEditing}
+                        disabled={!isEditing}
                         onChange={(e) => handleInputChange(`antecedentes.${tipo}.neoplasias`, e.target.checked)}
                       />
                       <span>NEOPLASIAS</span>
@@ -1095,17 +1262,20 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
             </div>
 
             <TratamentosCard
-              paciente={isSearchMode ? paciente : (editedPaciente || paciente)}
+              paciente={isSearchMode ? paciente : (editedPaciente as typeof paciente || paciente)}
               isEditing={isEditing && !isSearchMode}
               isSearchMode={isSearchMode}
               searchFields={searchFields}
               onSearchFieldChange={onSearchFieldChange}
               onUpdate={(updatedData) => {
                 if (!isSearchMode) {
-                  setEditedPaciente(prev => ({
-                    ...prev,
-                    ...updatedData
-                  } as Paciente));
+                  setEditedPaciente(prev => {
+                    if (!prev) return updatedData;
+                    return {
+                      ...prev,
+                      ...updatedData
+                    };
+                  });
                 }
               }}
             />
