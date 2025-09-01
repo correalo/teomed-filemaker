@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'TEOMED - Sistema de Prontuários',
   description: 'Sistema moderno de prontuários médicos baseado no FileMaker',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

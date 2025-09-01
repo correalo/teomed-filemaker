@@ -169,25 +169,35 @@ export default function PortalSection({ pacienteId, isSearchMode = false, search
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="block text-xs font-medium text-filemaker-text mb-1">PESO</label>
-                  <input
-                    type="number"
-                    value={searchFields.peso || ''}
-                    onChange={(e) => onSearchFieldChange?.('peso', e.target.value)}
-                    className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
-                    style={{ backgroundColor: '#fef3e2' }}
-                    placeholder="120.3"
-                  />
+                  <div className="flex items-stretch">
+                    <input
+                      type="number"
+                      value={searchFields.peso || ''}
+                      onChange={(e) => onSearchFieldChange?.('peso', e.target.value)}
+                      className="filemaker-input text-sm bg-orange-50 border-orange-300 focus:border-orange-500 text-right rounded-r-none border-r-0"
+                      style={{ backgroundColor: '#fef3e2' }}
+                      placeholder="120.3"
+                    />
+                    <span className="bg-blue-600 text-white text-xs px-3 py-2 rounded-r border border-l-0 border-blue-600 flex items-center font-medium whitespace-nowrap">
+                      kg
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-filemaker-text mb-1">ALTURA</label>
-                  <input
-                    type="number"
-                    value={searchFields.altura || ''}
-                    onChange={(e) => onSearchFieldChange?.('altura', e.target.value)}
-                    className="filemaker-input w-full text-sm bg-orange-50 border-orange-300 focus:border-orange-500"
-                    style={{ backgroundColor: '#fef3e2' }}
-                    placeholder="1.63"
-                  />
+                  <div className="flex items-stretch">
+                    <input
+                      type="number"
+                      value={searchFields.altura || ''}
+                      onChange={(e) => onSearchFieldChange?.('altura', e.target.value)}
+                      className="filemaker-input text-sm bg-orange-50 border-orange-300 focus:border-orange-500 text-right rounded-r-none border-r-0"
+                      style={{ backgroundColor: '#fef3e2' }}
+                      placeholder="1.63"
+                    />
+                    <span className="bg-blue-600 text-white text-xs px-3 py-2 rounded-r border border-l-0 border-blue-600 flex items-center font-medium whitespace-nowrap">
+                      m
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-filemaker-text mb-1">IMC</label>

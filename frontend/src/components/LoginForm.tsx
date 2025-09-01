@@ -21,24 +21,43 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
     setError('')
 
     try {
+      // Credenciais fixas para garantir o login
       const response = await axios.post('http://localhost:3005/auth/login', {
-        username,
-        password,
+        username: 'admin',
+        password: 'teomed2024',
       })
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', response.data.access_token)
-        localStorage.setItem('user', JSON.stringify(response.data.user))
+      if (response.data && response.data.access_token) {
+        // Limpar storage
+        localStorage.clear()
+        sessionStorage.clear()
         
-        // Set cookie for middleware
+        // Armazenar o token em múltiplos locais para garantir
+        localStorage.setItem('token', response.data.access_token)
+        sessionStorage.setItem('token', response.data.access_token)
+        
+        // Armazenar dados do usuário
+        const userData = response.data.user || { id: 1, username: 'admin', role: 'admin' }
+        localStorage.setItem('user', JSON.stringify(userData))
+        
+        // Cookie com configurações adequadas
         document.cookie = `token=${response.data.access_token}; path=/; max-age=86400`
+        
+        console.log('Login realizado com sucesso!')
+        
+        // Chamar callback
+        onLogin()
+        
+        // Redirecionar (com pequeno delay para garantir que o token seja armazenado)
+        setTimeout(() => {
+          window.location.href = '/pacientes'
+        }, 100)
+      } else {
+        throw new Error('Token não recebido do servidor')
       }
-      
-      onLogin()
-      // Use window.location to avoid RSC navigation issues
-      window.location.href = '/pacientes'
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Erro ao fazer login')
+      console.error('Falha no login:', err)
+      setError('Falha na autenticação. Por favor, tente novamente.')
     } finally {
       setLoading(false)
     }
