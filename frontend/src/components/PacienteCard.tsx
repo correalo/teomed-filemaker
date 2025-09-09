@@ -118,7 +118,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
     
     setIsSaving(true)
     try {
-      const response = await fetch(`http://localhost:3005/pacientes/${paciente._id}`, {
+      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -317,7 +317,7 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
               onChange={(value) => onSearchFieldChange?.('nome', value)}
               placeholder="Buscar por nome..."
               className={`filemaker-input w-full text-sm sm:text-base bg-orange-50 border-orange-300 focus:border-orange-500`}
-              apiEndpoint="http://localhost:3005/pacientes/autocomplete/nomes"
+              apiEndpoint="http://localhost:3004/pacientes/autocomplete/nomes"
             />
           ) : (
             <input

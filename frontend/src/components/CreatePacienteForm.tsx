@@ -123,7 +123,7 @@ export default function CreatePacienteForm({ onClose, onSuccess }: CreatePacient
     
     setIsCreating(true)
     try {
-      const response = await fetch('http://localhost:3005/pacientes', {
+      const response = await fetch('http://localhost:3004/pacientes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
