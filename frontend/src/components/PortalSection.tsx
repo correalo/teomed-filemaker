@@ -1,8 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { useToast } from './Toast'
+import { Evolucao, EvolucaoSearchFields } from '../types/evolucao'
 
 interface PortalSectionProps {
   pacienteId: string
@@ -24,16 +28,75 @@ api.interceptors.request.use((config) => {
 })
 
 export default function PortalSection({ pacienteId, isSearchMode = false, searchFields = {}, onSearchFieldChange }: PortalSectionProps) {
-  const [activeTab, setActiveTab] = useState('receitas')
+  const [activeTab, setActiveTab] = useState('evolucoes')
+  
+  // Estados para funcionalidade CRUD de evoluções
+  const [evolucoes, setEvolucoes] = useState<Evolucao[]>([])
+  const [editedEvolucoes, setEditedEvolucoes] = useState<Evolucao[]>([])
+  const [isEditingLocal, setIsEditingLocal] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [pacienteNome, setPacienteNome] = useState<string>('')
+  const toast = useToast()
+  
+  const [newEvolucao, setNewEvolucao] = useState<Evolucao>({
+    paciente_id: pacienteId,
+    nome_paciente: '',
+    data_retorno: format(new Date(), 'yyyy-MM-dd'),
+    delta_t: '',
+    peso: 0,
+    delta_peso: 0,
+    exames_alterados: '',
+    medicacoes: [],
+  })
 
   // Removed API calls for non-existent endpoints (evolucoes, avaliacoes, exames-preop)
   // These modules were removed from the backend
+
+  // Query para evoluções
+  const { data: evolucoesFetched, refetch: refetchEvolucoes } = useQuery({
+    queryKey: ['evolucoes', pacienteId],
+    queryFn: () => api.get(`/evolucoes/paciente/${pacienteId}`).then(res => res.data),
+    enabled: activeTab === 'evolucoes'
+  })
 
   const { data: receitas } = useQuery({
     queryKey: ['receitas', pacienteId],
     queryFn: () => api.get(`/receitas/paciente/${pacienteId}`).then(res => res.data),
     enabled: activeTab === 'receitas'
   })
+
+  // Buscar o nome do paciente
+  const fetchPacienteNome = useCallback(async () => {
+    try {
+      const response = await api.get(`/pacientes/${pacienteId}`)
+      const data = response.data
+      if (data && data.nome) {
+        setPacienteNome(data.nome)
+        setNewEvolucao(prev => ({
+          ...prev,
+          nome_paciente: data.nome
+        }))
+      }
+    } catch (error) {
+      console.error('Erro ao buscar dados do paciente:', error)
+    }
+  }, [pacienteId])
+
+  // Atualizar evoluções quando os dados chegarem
+  useEffect(() => {
+    if (evolucoesFetched) {
+      setEvolucoes(evolucoesFetched)
+      setEditedEvolucoes(evolucoesFetched)
+    }
+  }, [evolucoesFetched])
+
+  // Buscar nome do paciente quando o componente montar
+  useEffect(() => {
+    if (pacienteId) {
+      fetchPacienteNome()
+    }
+  }, [pacienteId, fetchPacienteNome])
 
   const tabs = [
     { id: 'evolucoes', label: 'EVOLUÇÕES', color: 'bg-filemaker-blue' },
@@ -42,14 +105,431 @@ export default function PortalSection({ pacienteId, isSearchMode = false, search
     { id: 'receitas', label: 'RECEITAS', color: 'bg-filemaker-red' },
   ]
 
+  // Funções CRUD para evoluções
+  const handleCreateEvolucao = async () => {
+    if (!newEvolucao.data_retorno) {
+      toast.warning('Data de retorno é obrigatória')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const evolucaoToCreate = {
+        ...newEvolucao,
+        nome_paciente: newEvolucao.nome_paciente || pacienteNome,
+        paciente_id: pacienteId
+      }
+
+      const response = await api.post('/evolucoes', evolucaoToCreate)
+      
+      if (response.data) {
+        await refetchEvolucoes()
+        
+        // Resetar formulário
+        setNewEvolucao({
+          paciente_id: pacienteId,
+          nome_paciente: pacienteNome,
+          data_retorno: format(new Date(), 'yyyy-MM-dd'),
+          delta_t: '',
+          peso: 0,
+          delta_peso: 0,
+          exames_alterados: '',
+          medicacoes: [],
+        })
+        setShowAddForm(false)
+        toast.success('Evolução criada com sucesso!')
+      }
+    } catch (error: any) {
+      console.error('Erro ao criar evolução:', error)
+      toast.error(`Erro ao criar evolução: ${error.message}`)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleSaveEvolucoes = async () => {
+    setIsSaving(true)
+    try {
+      const promises = editedEvolucoes.map(async (evolucao) => {
+        if (evolucao._id) {
+          return await api.put(`/evolucoes/${evolucao._id}`, evolucao)
+        }
+        return evolucao
+      })
+
+      await Promise.all(promises)
+      await refetchEvolucoes()
+      setIsEditingLocal(false)
+      toast.success('Evoluções salvas com sucesso!')
+    } catch (error: any) {
+      console.error('Erro ao salvar evoluções:', error)
+      toast.error(`Erro ao salvar evoluções: ${error.message}`)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleAddEvolucao = async () => {
+    if (!newEvolucao.data_retorno) {
+      toast.error('Data de retorno é obrigatória')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const evolucaoData = {
+        paciente_id: pacienteId,
+        nome_paciente: pacienteNome,
+        data_retorno: newEvolucao.data_retorno,
+        delta_t: newEvolucao.delta_t || '',
+        peso: newEvolucao.peso || 0,
+        delta_peso: newEvolucao.delta_peso || 0,
+        exames_alterados: newEvolucao.exames_alterados || '',
+        medicacoes: Array.isArray(newEvolucao.medicacoes) 
+          ? newEvolucao.medicacoes 
+          : (newEvolucao.medicacoes && typeof newEvolucao.medicacoes === 'string' ? newEvolucao.medicacoes.split(',').map((item: string) => item.trim()) : [])
+      }
+
+      await api.post('/evolucoes', evolucaoData)
+      
+      // Resetar formulário
+      setNewEvolucao({
+        paciente_id: pacienteId,
+        nome_paciente: pacienteNome,
+        data_retorno: '',
+        delta_t: '',
+        peso: 0,
+        delta_peso: 0,
+        exames_alterados: '',
+        medicacoes: []
+      })
+      
+      setShowAddForm(false)
+      await refetchEvolucoes()
+      toast.success('Evolução criada com sucesso!')
+    } catch (error: any) {
+      console.error('Erro ao criar evolução:', error)
+      toast.error(`Erro ao criar evolução: ${error.message}`)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteEvolucao = async (evolucaoId: string, index: number) => {
+    if (!confirm('Tem certeza que deseja deletar esta evolução?')) {
+      return
+    }
+
+    try {
+      await api.delete(`/evolucoes/${evolucaoId}`)
+      await refetchEvolucoes()
+      toast.success('Evolução deletada com sucesso!')
+    } catch (error: any) {
+      console.error('Erro ao deletar evolução:', error)
+      toast.error(`Erro ao deletar evolução: ${error.message}`)
+    }
+  }
+
+  const handleEditEvolucao = (index: number) => {
+    const updatedEvolucoes = [...editedEvolucoes]
+    updatedEvolucoes[index] = { ...updatedEvolucoes[index], _editing: true }
+    setEditedEvolucoes(updatedEvolucoes)
+  }
+
+  const handleCancelEdit = (index: number) => {
+    const updatedEvolucoes = [...editedEvolucoes]
+    updatedEvolucoes[index] = { ...evolucoes[index], _editing: false }
+    setEditedEvolucoes(updatedEvolucoes)
+  }
+
+  const handleSaveEvolucao = async (index: number) => {
+    const evolucao = editedEvolucoes[index]
+    if (!evolucao._id) return
+
+    setIsSaving(true)
+    try {
+      await api.put(`/evolucoes/${evolucao._id}`, evolucao)
+      const updatedEvolucoes = [...editedEvolucoes]
+      updatedEvolucoes[index] = { ...updatedEvolucoes[index], _editing: false }
+      setEditedEvolucoes(updatedEvolucoes)
+      await refetchEvolucoes()
+      toast.success('Evolução salva com sucesso!')
+    } catch (error: any) {
+      console.error('Erro ao salvar evolução:', error)
+      toast.error(`Erro ao salvar evolução: ${error.message}`)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleInputChange = (index: number, field: keyof Evolucao, value: any) => {
+    const updatedEvolucoes = [...editedEvolucoes]
+    updatedEvolucoes[index] = {
+      ...updatedEvolucoes[index],
+      [field]: value
+    }
+    setEditedEvolucoes(updatedEvolucoes)
+  }
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return ''
+    
+    try {
+      const parts = dateString.split('/')
+      if (parts.length === 3) {
+        return dateString
+      }
+      
+      const date = new Date(dateString)
+      return format(date, 'dd/MM/yyyy', { locale: ptBR })
+    } catch (error) {
+      return dateString
+    }
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case 'evolucoes':
         return (
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">EVOLUÇÕES</h3>
-            <div className="text-center py-8 text-gray-500">
-              Módulo de evoluções em desenvolvimento
+          <div className="bg-white border border-gray-300">
+            {/* Header com título e botões */}
+            <div className="bg-filemaker-blue text-white px-3 py-2 flex justify-between items-center">
+              <h3 className="text-sm font-bold">EVOLUÇÃO</h3>
+              <div className="flex gap-1">
+                {!isSearchMode && (
+                  <button
+                    onClick={() => setShowAddForm(!showAddForm)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                    disabled={isSaving}
+                    title="Criar nova evolução"
+                  >
+                    ➕
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Header das colunas */}
+            <div className="bg-gray-100 border-b border-gray-300">
+              <div className="grid grid-cols-12 gap-1 px-2 py-1">
+                <div className="col-span-3 text-xs font-bold text-filemaker-text">NOME</div>
+                <div className="col-span-1 text-xs font-bold text-filemaker-text">DATA</div>
+                <div className="col-span-1 text-xs font-bold text-filemaker-text">DELTA T</div>
+                <div className="col-span-1 text-xs font-bold text-filemaker-text">PESO</div>
+                <div className="col-span-1 text-xs font-bold text-filemaker-text">DELTA PESO</div>
+                <div className="col-span-2 text-xs font-bold text-filemaker-text">EXAMES ALTERADOS</div>
+                <div className="col-span-2 text-xs font-bold text-filemaker-text">MEDICAÇÕES</div>
+                <div className="col-span-1 text-xs font-bold text-filemaker-text flex justify-center">
+                  AÇÕES
+                </div>
+              </div>
+            </div>
+
+            {/* Formulário para nova evolução */}
+            {showAddForm && !isSearchMode && (
+              <div className="border-b border-gray-300 bg-yellow-50">
+                <div className="grid grid-cols-12 gap-1 px-2 py-2">
+                  <input
+                    type="text"
+                    value={newEvolucao.nome_paciente || pacienteNome}
+                    className="col-span-3 border border-gray-300 rounded px-1 py-1 text-xs bg-gray-100"
+                    readOnly={true}
+                    title="Nome do paciente"
+                  />
+                  <input
+                    type="date"
+                    value={newEvolucao.data_retorno}
+                    onChange={(e) => setNewEvolucao({ ...newEvolucao, data_retorno: e.target.value })}
+                    className="col-span-1 border border-gray-300 rounded px-1 py-1 text-xs"
+                  />
+                  <input
+                    type="text"
+                    value={newEvolucao.delta_t}
+                    onChange={(e) => setNewEvolucao({ ...newEvolucao, delta_t: e.target.value })}
+                    className="col-span-1 border border-gray-300 rounded px-1 py-1 text-xs"
+                    placeholder="7 DIAS"
+                  />
+                  <input
+                    type="number"
+                    value={newEvolucao.peso || ''}
+                    onChange={(e) => setNewEvolucao({ ...newEvolucao, peso: parseFloat(e.target.value) })}
+                    className="col-span-1 border border-gray-300 rounded px-1 py-1 text-xs"
+                    step="0.1"
+                    placeholder="178,20"
+                  />
+                  <input
+                    type="number"
+                    value={newEvolucao.delta_peso || ''}
+                    onChange={(e) => setNewEvolucao({ ...newEvolucao, delta_peso: parseFloat(e.target.value) })}
+                    className="col-span-1 border border-gray-300 rounded px-1 py-1 text-xs"
+                    step="0.1"
+                    placeholder="11"
+                  />
+                  <input
+                    type="text"
+                    value={newEvolucao.exames_alterados}
+                    onChange={(e) => setNewEvolucao({ ...newEvolucao, exames_alterados: e.target.value })}
+                    className="col-span-2 border border-gray-300 rounded px-1 py-1 text-xs"
+                  />
+                  <input
+                    type="text"
+                    value={Array.isArray(newEvolucao.medicacoes) ? newEvolucao.medicacoes.join(', ') : ''}
+                    onChange={(e) => setNewEvolucao({ ...newEvolucao, medicacoes: e.target.value.split(',').map(item => item.trim()) })}
+                    className="col-span-2 border border-gray-300 rounded px-1 py-1 text-xs"
+                  />
+                  <div className="col-span-1 flex justify-center">
+                    <button
+                      onClick={handleAddEvolucao}
+                      className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                      disabled={isSaving}
+                      title="Salvar nova evolução"
+                    >
+                      ✓
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Linhas de dados */}
+            <div className="max-h-96 overflow-y-auto">
+              {editedEvolucoes.length > 0 ? (
+                editedEvolucoes.map((evolucao, index) => (
+                  <div key={`evolucao-${index}-${evolucao._id || index}`} className="border-b border-gray-200">
+                    <div className="grid grid-cols-12 gap-1 px-2 py-2">
+                      <div className="col-span-3 text-xs py-1 px-1 border border-gray-200 rounded bg-blue-50">
+                        {evolucao.nome_paciente}
+                      </div>
+                      
+                      {evolucao._editing ? (
+                        <input
+                          type="date"
+                          value={evolucao.data_retorno ? new Date(evolucao.data_retorno).toISOString().split('T')[0] : ''}
+                          onChange={(e) => handleInputChange(index, 'data_retorno', e.target.value)}
+                          className="col-span-1 border border-gray-300 rounded px-1 py-1 text-xs"
+                        />
+                      ) : (
+                        <div className="col-span-1 text-xs py-1 px-1 border border-gray-200 rounded bg-white">
+                          {formatDate(evolucao.data_retorno)}
+                        </div>
+                      )}
+                      
+                      {evolucao._editing ? (
+                        <input
+                          type="text"
+                          value={evolucao.delta_t || ''}
+                          onChange={(e) => handleInputChange(index, 'delta_t', e.target.value)}
+                          className="col-span-1 border border-gray-300 rounded px-1 py-1 text-xs"
+                        />
+                      ) : (
+                        <div className="col-span-1 text-xs py-1 px-1 border border-gray-200 rounded bg-white">
+                          {evolucao.delta_t}
+                        </div>
+                      )}
+                      
+                      {evolucao._editing ? (
+                        <input
+                          type="number"
+                          value={evolucao.peso || ''}
+                          onChange={(e) => handleInputChange(index, 'peso', parseFloat(e.target.value))}
+                          className="col-span-1 border border-gray-300 rounded px-1 py-1 text-xs"
+                          step="0.1"
+                        />
+                      ) : (
+                        <div className="col-span-1 text-xs py-1 px-1 border border-gray-200 rounded bg-white">
+                          {evolucao.peso}
+                        </div>
+                      )}
+                      
+                      {evolucao._editing ? (
+                        <input
+                          type="number"
+                          value={evolucao.delta_peso || ''}
+                          onChange={(e) => handleInputChange(index, 'delta_peso', parseFloat(e.target.value))}
+                          className="col-span-1 border border-gray-300 rounded px-1 py-1 text-xs"
+                          step="0.1"
+                        />
+                      ) : (
+                        <div className="col-span-1 text-xs py-1 px-1 border border-gray-200 rounded bg-white">
+                          {evolucao.delta_peso}
+                        </div>
+                      )}
+                      
+                      {evolucao._editing ? (
+                        <input
+                          type="text"
+                          value={evolucao.exames_alterados || ''}
+                          onChange={(e) => handleInputChange(index, 'exames_alterados', e.target.value)}
+                          className="col-span-2 border border-gray-300 rounded px-1 py-1 text-xs"
+                        />
+                      ) : (
+                        <div className="col-span-2 text-xs py-1 px-1 border border-gray-200 rounded bg-white">
+                          {evolucao.exames_alterados}
+                        </div>
+                      )}
+                      
+                      {evolucao._editing ? (
+                        <input
+                          type="text"
+                          value={Array.isArray(evolucao.medicacoes) ? evolucao.medicacoes.join(', ') : ''}
+                          onChange={(e) => handleInputChange(index, 'medicacoes', e.target.value.split(',').map(item => item.trim()))}
+                          className="col-span-2 border border-gray-300 rounded px-1 py-1 text-xs"
+                        />
+                      ) : (
+                        <div className="col-span-2 text-xs py-1 px-1 border border-gray-200 rounded bg-white">
+                          {Array.isArray(evolucao.medicacoes) ? evolucao.medicacoes.join(', ') : ''}
+                        </div>
+                      )}
+                      
+                      <div className="col-span-1 flex justify-center items-center gap-1">
+                        {evolucao._editing ? (
+                          <>
+                            <button
+                              onClick={() => handleSaveEvolucao(index)}
+                              className="bg-green-600 hover:bg-green-700 text-white px-1 py-1 rounded text-xs"
+                              title="Salvar"
+                              disabled={isSaving}
+                            >
+                              ✓
+                            </button>
+                            <button
+                              onClick={() => handleCancelEdit(index)}
+                              className="bg-gray-600 hover:bg-gray-700 text-white px-1 py-1 rounded text-xs"
+                              title="Cancelar"
+                              disabled={isSaving}
+                            >
+                              ✕
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleEditEvolucao(index)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-1 py-1 rounded text-xs"
+                              title="Editar"
+                              disabled={isSaving}
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEvolucao(evolucao._id || '', index)}
+                              className="bg-red-600 hover:bg-red-700 text-white px-1 py-1 rounded text-xs"
+                              title="Deletar"
+                              disabled={!evolucao._id || isSaving}
+                            >
+                              🗑️
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-500 text-sm">
+                  Nenhuma evolução encontrada
+                </div>
+              )}
             </div>
           </div>
         )

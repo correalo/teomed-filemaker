@@ -3,9 +3,11 @@ import { Evolucao, EvolucaoSearchFields } from '../types/evolucao';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import api from '@/utils/api';
+import { useToast } from './Toast';
 
 interface EvolucaoCardProps {
   pacienteId: string;
+  pacienteNome?: string;
   evolucoes: Evolucao[];
   isEditing: boolean;
   isSearchMode: boolean;
@@ -15,6 +17,7 @@ interface EvolucaoCardProps {
 
 const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
   pacienteId,
+  pacienteNome: pacienteNomeProp,
   evolucoes = [],
   isEditing,
   isSearchMode,
@@ -25,10 +28,13 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
   const [searchFields, setSearchFields] = useState<EvolucaoSearchFields>({});
   const [showAddForm, setShowAddForm] = useState(false);
   const [paciente, setPaciente] = useState<any>({});
-  const [pacienteNome, setPacienteNome] = useState<string>('');
+  const [pacienteNome, setPacienteNome] = useState<string>(pacienteNomeProp || '');
+  const [isEditingLocal, setIsEditingLocal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const toast = useToast();
   const [newEvolucao, setNewEvolucao] = useState<Evolucao>({
     paciente_id: pacienteId,
-    nome_paciente: '',
+    nome_paciente: pacienteNomeProp || '',
     data_retorno: format(new Date(), 'yyyy-MM-dd'),
     delta_t: '',
     peso: 0,
@@ -62,12 +68,25 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
       console.error('Erro ao buscar dados do paciente:', error instanceof Error ? error.message : String(error));
     }
   }, [pacienteId]);
-  
+
   useEffect(() => {
     if (pacienteId) {
       fetchPacienteNome();
     }
   }, [pacienteId, fetchPacienteNome]);
+
+  useEffect(() => {
+    if (pacienteNomeProp) {
+      setPacienteNome(pacienteNomeProp);
+      // Atualizar também o newEvolucao com o nome correto
+      setNewEvolucao(prev => ({
+        ...prev,
+        nome_paciente: pacienteNomeProp
+      }));
+    } else if (pacienteId) {
+      fetchPacienteNome();
+    }
+  }, [pacienteId, pacienteNomeProp, fetchPacienteNome]);
 
   useEffect(() => {
     if (JSON.stringify(editedEvolucoes) !== JSON.stringify(evolucoes)) {
@@ -76,17 +95,12 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
   }, [evolucoes, editedEvolucoes]);
 
   const handleInputChange = (index: number, field: keyof Evolucao, value: any) => {
-    if (isEditing) {
-      const updatedEvolucoes = [...editedEvolucoes];
-      updatedEvolucoes[index] = {
-        ...updatedEvolucoes[index],
-        [field]: value,
-      };
-      setEditedEvolucoes(updatedEvolucoes);
-      if (onUpdate) {
-        onUpdate(updatedEvolucoes);
-      }
-    }
+    const updatedEvolucoes = [...editedEvolucoes];
+    updatedEvolucoes[index] = {
+      ...updatedEvolucoes[index],
+      [field]: value
+    };
+    setEditedEvolucoes(updatedEvolucoes);
   };
 
   const handleSearchChange = (field: keyof EvolucaoSearchFields, value: any) => {
@@ -109,32 +123,93 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
     }
   };
 
-  const handleAddEvolucao = () => {
-    if (isEditing && newEvolucao.data_retorno) {
-      // Garantir que o nome do paciente esteja preenchido
-      const evolucaoToAdd = {
+  // Função para criar nova evolução
+  const handleCreateEvolucao = async () => {
+    if (!newEvolucao.data_retorno) {
+      toast.warning('Data de retorno é obrigatória');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const evolucaoToCreate = {
         ...newEvolucao,
-        nome_paciente: newEvolucao.nome_paciente || pacienteNome
+        nome_paciente: newEvolucao.nome_paciente || pacienteNome,
+        paciente_id: pacienteId
       };
+
+      const response = await api.post('/evolucoes', evolucaoToCreate);
       
-      const updatedEvolucoes = [...editedEvolucoes, evolucaoToAdd];
+      if (response.data) {
+        const updatedEvolucoes = [...editedEvolucoes, response.data];
+        setEditedEvolucoes(updatedEvolucoes);
+        if (onUpdate) {
+          onUpdate(updatedEvolucoes);
+        }
+        
+        // Resetar formulário
+        setNewEvolucao({
+          paciente_id: pacienteId,
+          nome_paciente: pacienteNome,
+          data_retorno: format(new Date(), 'yyyy-MM-dd'),
+          delta_t: '',
+          peso: 0,
+          delta_peso: 0,
+          exames_alterados: '',
+          medicacoes: [],
+        });
+        setShowAddForm(false);
+        toast.success('Evolução criada com sucesso!');
+      }
+    } catch (error: any) {
+      console.error('Erro ao criar evolução:', error);
+      toast.error(`Erro ao criar evolução: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Função para salvar alterações nas evoluções existentes
+  const handleSaveEvolucoes = async () => {
+    setIsSaving(true);
+    try {
+      const promises = editedEvolucoes.map(async (evolucao) => {
+        if (evolucao._id) {
+          return await api.put(`/evolucoes/${evolucao._id}`, evolucao);
+        }
+        return evolucao;
+      });
+
+      await Promise.all(promises);
+      setIsEditingLocal(false);
+      toast.success('Evoluções salvas com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao salvar evoluções:', error);
+      toast.error(`Erro ao salvar evoluções: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Função para deletar evolução
+  const handleDeleteEvolucao = async (evolucaoId: string, index: number) => {
+    if (!confirm('Tem certeza que deseja deletar esta evolução?')) {
+      return;
+    }
+
+    try {
+      await api.delete(`/evolucoes/${evolucaoId}`);
+      
+      const updatedEvolucoes = editedEvolucoes.filter((_, i) => i !== index);
       setEditedEvolucoes(updatedEvolucoes);
       if (onUpdate) {
         onUpdate(updatedEvolucoes);
       }
       
-      // Resetar o formulário mantendo o nome do paciente
-      setNewEvolucao({
-        paciente_id: pacienteId,
-        nome_paciente: pacienteNome, // Manter o nome do paciente
-        data_retorno: format(new Date(), 'yyyy-MM-dd'),
-        delta_t: '',
-        peso: 0,
-        delta_peso: 0,
-        exames_alterados: '',
-        medicacoes: [],
-      });
-      setShowAddForm(false);
+      toast.success('Evolução deletada com sucesso!');
+    } catch (error: any) {
+      console.error('Erro ao deletar evolução:', error);
+      toast.error(`Erro ao deletar evolução: ${error.message}`);
     }
   };
 
@@ -163,14 +238,42 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
     <div className="bg-white rounded-lg shadow-md p-4 mb-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-filemaker-blue">EVOLUÇÃO</h2>
-        {isEditing && (
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="bg-filemaker-blue text-white px-3 py-1 rounded hover:bg-blue-700"
-          >
-            {showAddForm ? 'Cancelar' : 'Adicionar'}
-          </button>
-        )}
+        
+        {/* Botões CRUD */}
+        <div className="flex gap-2">
+          {!isSearchMode && (
+            <>
+              <button
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded transition-colors flex items-center gap-1"
+                disabled={isSaving}
+              >
+                <span>➕</span>
+                {showAddForm ? 'Cancelar' : 'Criar Nova'}
+              </button>
+              
+              <button
+                onClick={() => setIsEditingLocal(!isEditingLocal)}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition-colors flex items-center gap-1"
+                disabled={isSaving}
+              >
+                <span>✏️</span>
+                {isEditingLocal ? 'Cancelar Edição' : 'Editar'}
+              </button>
+              
+              {isEditingLocal && (
+                <button
+                  onClick={handleSaveEvolucoes}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded transition-colors flex items-center gap-1"
+                  disabled={isSaving}
+                >
+                  <span>💾</span>
+                  {isSaving ? 'Salvando...' : 'Salvar'}
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {isSearchMode && (
@@ -301,8 +404,9 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
           </div>
           <div className="mt-2 text-right">
             <button
-              onClick={handleAddEvolucao}
+              onClick={handleCreateEvolucao}
               className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
+              disabled={isSaving}
             >
               Salvar
             </button>
@@ -321,7 +425,9 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
               <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text">DELTA PESO</th>
               <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text">EXAMES ALTERADOS</th>
               <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text">MEDICAÇÕES</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text"></th>
+              {(isEditingLocal || !isSearchMode) && (
+                <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text">AÇÕES</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -329,7 +435,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
               editedEvolucoes.map((evolucao, index) => (
                 <tr key={evolucao._id || index} className="border-b hover:bg-gray-50">
                   <td className="py-2 px-3 text-sm">
-                    {isEditing ? (
+                    {isEditingLocal ? (
                       <input
                         type="text"
                         value={evolucao.nome_paciente || pacienteNome || ''}
@@ -343,7 +449,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                     )}
                   </td>
                   <td className="py-2 px-3 text-sm">
-                    {isEditing ? (
+                    {isEditingLocal ? (
                       <input
                         type="date"
                         value={evolucao.data_retorno || ''}
@@ -355,7 +461,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                     )}
                   </td>
                   <td className="py-2 px-3 text-sm">
-                    {isEditing ? (
+                    {isEditingLocal ? (
                       <input
                         type="text"
                         value={evolucao.delta_t || ''}
@@ -367,7 +473,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                     )}
                   </td>
                   <td className="py-2 px-3 text-sm">
-                    {isEditing ? (
+                    {isEditingLocal ? (
                       <input
                         type="number"
                         value={evolucao.peso || ''}
@@ -380,7 +486,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                     )}
                   </td>
                   <td className="py-2 px-3 text-sm">
-                    {isEditing ? (
+                    {isEditingLocal ? (
                       <input
                         type="number"
                         value={evolucao.delta_peso || ''}
@@ -393,7 +499,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                     )}
                   </td>
                   <td className="py-2 px-3 text-sm">
-                    {isEditing ? (
+                    {isEditingLocal ? (
                       <input
                         type="text"
                         value={evolucao.exames_alterados || ''}
@@ -405,7 +511,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                     )}
                   </td>
                   <td className="py-2 px-3 text-sm">
-                    {isEditing ? (
+                    {isEditingLocal ? (
                       <input
                         type="text"
                         value={Array.isArray(evolucao.medicacoes) ? evolucao.medicacoes.join(', ') : ''}
@@ -417,16 +523,22 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                       Array.isArray(evolucao.medicacoes) ? evolucao.medicacoes.join(', ') : ''
                     )}
                   </td>
-                  <td className="py-2 px-3 text-sm">
-                    <button
-                      className="text-blue-500 hover:text-blue-700"
-                      aria-label="Editar"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
-                  </td>
+                  {(isEditingLocal || !isSearchMode) && (
+                    <td className="py-2 px-3 text-sm">
+                      <div className="flex gap-1">
+                        {!isSearchMode && (
+                          <button
+                            onClick={() => handleDeleteEvolucao(evolucao._id || '', index)}
+                            className="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
+                            title="Deletar evolução"
+                            disabled={!evolucao._id}
+                          >
+                            <span>🗑️</span>
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))
             ) : (

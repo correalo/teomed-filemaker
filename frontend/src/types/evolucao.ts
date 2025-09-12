@@ -10,6 +10,7 @@ export interface Evolucao {
   medicacoes: string[];
   exames_posop?: Record<string, any>;
   _modified?: boolean;
+  _editing?: boolean;
 }
 
 export interface EvolucaoSearchFields {

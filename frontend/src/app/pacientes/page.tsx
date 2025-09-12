@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import PacienteCard from '../../components/PacienteCard'
+import EvolucaoCard from '../../components/EvolucaoCard'
 import NavigationArrows from '@/components/NavigationArrows'
 import PortalSection from '@/components/PortalSection'
 import CreatePacienteForm from '@/components/CreatePacienteForm'
@@ -643,6 +644,7 @@ export default function PacientesPage() {
           searchFields={pendingSearchFields}
           onSearchFieldChange={handleSearchFieldChange}
         />
+
         
         {/* Portal Section */}
         <PortalSection 
