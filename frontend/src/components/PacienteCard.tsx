@@ -25,12 +25,18 @@ interface PacienteCardProps {
   onSearchFieldChange?: (field: string, value: string) => void
 }
 
-export default function PacienteCard({ paciente, isSearchMode = false, searchFields = {}, onSearchFieldChange }: PacienteCardProps) {
+export default function PacienteCard({ paciente: pacienteProp, isSearchMode = false, searchFields = {}, onSearchFieldChange }: PacienteCardProps) {
+  const [paciente, setPaciente] = useState<Paciente>(pacienteProp)
   const [isEditing, setIsEditing] = useState(false)
   const [editedPaciente, setEditedPaciente] = useState<Partial<Paciente> | null>(null)
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({})
   const [isSaving, setIsSaving] = useState(false)
   const toast = useToast()
+  
+  // Atualizar state local quando prop mudar
+  useEffect(() => {
+    setPaciente(pacienteProp)
+  }, [pacienteProp])
   
   const formatDate = (dateString: string) => {
     try {
@@ -78,11 +84,19 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
     }
     
     // Criar um objeto editedPaciente com todos os campos necessários inicializados
-    setEditedPaciente({ 
+    const pacienteParaEdicao = { 
       ...paciente,
+      nome: paciente.nome || '',
+      prontuario: Number(paciente.prontuario) || 0,
       dados_clinicos: dadosClinicos,
       cirurgia: cirurgia
-    })
+    };
+    
+    console.log('EDIÇÃO: Criando editedPaciente com dados:', pacienteParaEdicao);
+    console.log('EDIÇÃO: Nome =', pacienteParaEdicao.nome);
+    console.log('EDIÇÃO: Prontuário =', pacienteParaEdicao.prontuario);
+    
+    setEditedPaciente(pacienteParaEdicao)
     
     setIsEditing(true)
     console.log('isEditing após setIsEditing:', true)
@@ -94,22 +108,22 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
   }
 
   const validateRequired = () => {
-    if (!editedPaciente) return false
-    
-    const requiredFields = ['nome', 'prontuario']
-    const missingFields = []
-    
-    for (const field of requiredFields) {
-      if (!editedPaciente[field as keyof Paciente]) {
-        missingFields.push(field)
-      }
+    if (!editedPaciente) {
+      console.log('VALIDAÇÃO: editedPaciente é null/undefined');
+      return false;
     }
     
-    if (missingFields.length > 0) {
-      toast.warning(`Campos obrigatórios: ${missingFields.join(', ')}`, 4000)
-      return false
+    console.log('VALIDAÇÃO: Verificando apenas campo nome...');
+    console.log('VALIDAÇÃO: editedPaciente.nome =', editedPaciente.nome);
+    
+    // Validar apenas nome - prontuário pode ser 0 ou vazio
+    if (!editedPaciente.nome || (typeof editedPaciente.nome === 'string' && editedPaciente.nome.trim() === '')) {
+      console.log('VALIDAÇÃO: Nome está vazio');
+      toast.warning('Campo obrigatório: Nome', 4000);
+      return false;
     }
     
+    console.log('VALIDAÇÃO: Nome preenchido, validação passou');
     return true
   }
 
@@ -193,9 +207,13 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
       if (response.ok) {
         console.log('SUCESSO: Dados salvos no servidor');
         
-        // Atualizar dados locais
-        Object.assign(paciente, pacienteToSave);
-        console.log('Dados locais atualizados');
+        // Pegar dados atualizados do servidor
+        const updatedPaciente = await response.json();
+        console.log('Dados recebidos do servidor:', updatedPaciente);
+        
+        // Atualizar estado local com resposta do servidor
+        setPaciente(updatedPaciente);
+        console.log('Estado local atualizado com setPaciente');
         
         // Sair do modo de edição
         setIsEditing(false);
@@ -204,11 +222,8 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
         
         toast.success('Dados salvos com sucesso!');
         
-        // Recarregar após sucesso
-        console.log('Recarregando página em 1 segundo...');
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+        // Não precisa mais recarregar a página
+        console.log('Atualização concluída sem reload');
       } else {
         const errorText = await response.text();
         console.error('ERRO do servidor:', response.status, errorText);
@@ -399,11 +414,11 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
           ) : (
             <input
               type="text"
-              value={currentData?.nome || ''}
+              value={isEditing ? (editedPaciente?.nome || '') : (paciente?.nome || '')}
               readOnly={!isEditing}
               onChange={(e) => handleInputChange('nome', e.target.value)}
               className={`filemaker-input w-full text-sm sm:text-base ${
-                !currentData?.nome && isEditing ? 'border-red-500' : ''
+                !editedPaciente?.nome && isEditing ? 'border-red-500' : ''
               }`}
               style={{ backgroundColor: isEditing ? '#fff' : '#f9f9f9' }}
             />
