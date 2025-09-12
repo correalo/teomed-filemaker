@@ -15,7 +15,7 @@ import { AppController } from './app.controller';
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
-    MongooseModule.forRoot(process.env.MONGODB_URI),
+    MongooseModule.forRoot('mongodb://localhost:27017/pacientes_db'),
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production',

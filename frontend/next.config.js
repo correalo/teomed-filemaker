@@ -4,4 +4,17 @@ const nextConfig = {
   // Não é mais necessário configurar appDir como experimental
 }
 
-module.exports = nextConfig
+// Configuração para o servidor de desenvolvimento
+const serverConfig = {
+  env: {
+    PORT: 3000,
+  },
+  serverRuntimeConfig: {
+    port: 3000,
+  },
+}
+
+module.exports = {
+  ...nextConfig,
+  ...serverConfig,
+}

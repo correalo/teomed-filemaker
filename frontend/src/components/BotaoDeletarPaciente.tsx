@@ -39,8 +39,8 @@ export function BotaoDeletarPaciente({ paciente }: Props) {
       toast.success('Paciente deletado com sucesso!')
       
       setTimeout(() => {
-        window.location.reload()
-      }, 2000)
+        window.location.href = '/pacientes'
+      }, 1500)
 
     } catch (e: any) {
       console.error("Erro ao deletar:", e?.message || e);

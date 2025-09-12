@@ -113,36 +113,113 @@ export default function PacienteCard({ paciente, isSearchMode = false, searchFie
     return true
   }
 
-  const handleSave = async () => {
-    if (!editedPaciente || !validateRequired()) return
+  // Função para forçar a saída do modo de edição em qualquer circunstância
+  const forceExitEditMode = () => {
+    console.log('Forçando saída do modo de edição');
+    setIsEditing(false);
+    setEditedPaciente(null);
+    setIsSaving(false);
     
-    setIsSaving(true)
+    // Forçar uma atualização do estado do React
+    setTimeout(() => {
+      setIsEditing(false);
+    }, 50);
+  };
+
+  const handleSave = async () => {
+    console.log('=== CLIQUE NO BOTÃO SALVAR DETECTADO ===');
+    console.log('Estado atual:', { isEditing, isSaving, editedPaciente: !!editedPaciente });
+    
+    if (!editedPaciente) {
+      console.log('ERRO: editedPaciente é null/undefined');
+      toast.error('Nenhum dado para salvar');
+      return;
+    }
+    
+    if (!validateRequired()) {
+      console.log('ERRO: Validação falhou');
+      return;
+    }
+    
+    console.log('Validação passou, continuando...');
+    
+    // Capturar dados antes de qualquer alteração de estado
+    const pacienteToSave = {
+      ...editedPaciente,
+      dados_clinicos: {
+        ...(editedPaciente.dados_clinicos || {}),
+        peso: parseFloat(editedPaciente.dados_clinicos?.peso?.toString() || '0') || 0,
+        altura: parseFloat(editedPaciente.dados_clinicos?.altura?.toString() || '0') || 0,
+        imc: parseFloat(editedPaciente.dados_clinicos?.imc?.toString() || '0') || 0
+      },
+      cirurgia: {
+        ...(editedPaciente.cirurgia || {})
+      }
+    };
+    
+    console.log('Dados preparados para salvar:', JSON.stringify(pacienteToSave, null, 2));
+    console.log('ID do paciente:', paciente._id);
+    
+    // Verificar token
+    const token = localStorage.getItem('token');
+    console.log('Token existe:', !!token);
+    console.log('Token (primeiros 20 chars):', token ? token.substring(0, 20) + '...' : 'NENHUM');
+    
+    if (!token) {
+      console.log('ERRO: Token não encontrado');
+      toast.error('Sessão expirada. Faça login novamente.');
+      return;
+    }
+    
+    const url = `http://localhost:3004/pacientes/${paciente._id}`;
+    console.log('URL da requisição:', url);
+    
     try {
-      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}`, {
+      console.log('Iniciando requisição PATCH...');
+      
+      // Fazer requisição ao backend
+      const response = await fetch(url, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(editedPaciente)
-      })
-
+        body: JSON.stringify(pacienteToSave)
+      });
+      
+      console.log('Resposta recebida - Status:', response.status);
+      console.log('Resposta recebida - OK:', response.ok);
+      
       if (response.ok) {
-        // Atualizar dados locais
-        Object.assign(paciente, editedPaciente)
-        setIsEditing(false)
-        setEditedPaciente(null)
+        console.log('SUCESSO: Dados salvos no servidor');
         
-        toast.success('Dados salvos com sucesso!')
+        // Atualizar dados locais
+        Object.assign(paciente, pacienteToSave);
+        console.log('Dados locais atualizados');
+        
+        // Sair do modo de edição
+        setIsEditing(false);
+        setEditedPaciente(null);
+        console.log('Saindo do modo de edição');
+        
+        toast.success('Dados salvos com sucesso!');
+        
+        // Recarregar após sucesso
+        console.log('Recarregando página em 1 segundo...');
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
       } else {
-        throw new Error('Erro na resposta do servidor')
+        const errorText = await response.text();
+        console.error('ERRO do servidor:', response.status, errorText);
+        toast.error(`Erro ao salvar: ${response.status} - ${errorText}`);
       }
-    } catch (error) {
-      console.error('Erro ao salvar:', error)
-      toast.error('Erro ao salvar dados do paciente')
-    } finally {
-      setIsSaving(false)
+    } catch (error: any) {
+      console.error('ERRO na requisição:', error);
+      toast.error(`Erro de conexão: ${error.message}`);
     }
+    
+    console.log('=== FIM DO PROCESSO DE SALVAMENTO ===');
   }
 
   const calculateAge = (birthDate: string): number => {
