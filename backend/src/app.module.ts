@@ -6,6 +6,7 @@ import { PassportModule } from '@nestjs/passport';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PacientesModule } from './pacientes/pacientes.module';
 import { ReceitasModule } from './receitas/receitas.module';
+import { EvolucoesModule } from './evolucoes/evolucoes.module';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
 
@@ -24,6 +25,7 @@ import { AppController } from './app.controller';
     AuthModule,
     PacientesModule,
     ReceitasModule,
+    EvolucoesModule,
   ],
   controllers: [AppController],
 })

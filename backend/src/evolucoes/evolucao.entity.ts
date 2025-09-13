@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 
 export type EvolucaoDocument = Evolucao & Document;
 
-@Schema({ collection: 'pacientes_db.evolucoes' })
+@Schema({ collection: 'evolucoes' })
 export class Evolucao {
   @Prop({ required: true })
   paciente_id: string;

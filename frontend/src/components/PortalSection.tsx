@@ -56,8 +56,8 @@ export default function PortalSection({ pacienteId, isSearchMode = false, search
   // Query para evoluções
   const { data: evolucoesFetched, refetch: refetchEvolucoes } = useQuery({
     queryKey: ['evolucoes', pacienteId],
-    queryFn: () => api.get(`/evolucoes/paciente/${pacienteId}`).then(res => res.data),
-    enabled: activeTab === 'evolucoes'
+    queryFn: () => api.get('/evolucoes', { params: { pacienteId } }).then(res => res.data),
+    enabled: activeTab === 'evolucoes' && !!pacienteId
   })
 
   const { data: receitas } = useQuery({
@@ -83,11 +83,16 @@ export default function PortalSection({ pacienteId, isSearchMode = false, search
     }
   }, [pacienteId])
 
-  // Atualizar evoluções quando os dados chegarem
+  // Atualizar evolucoes quando os dados são buscados
   useEffect(() => {
     if (evolucoesFetched) {
-      setEvolucoes(evolucoesFetched)
-      setEditedEvolucoes(evolucoesFetched)
+      const evolucoesWithEditState = evolucoesFetched.map((evolucao: Evolucao) => ({
+        ...evolucao,
+        _editing: false,
+        _modified: false
+      }))
+      setEvolucoes(evolucoesWithEditState)
+      setEditedEvolucoes(evolucoesWithEditState)
     }
   }, [evolucoesFetched])
 
@@ -187,7 +192,7 @@ export default function PortalSection({ pacienteId, isSearchMode = false, search
         exames_alterados: newEvolucao.exames_alterados || '',
         medicacoes: Array.isArray(newEvolucao.medicacoes) 
           ? newEvolucao.medicacoes 
-          : (newEvolucao.medicacoes && typeof newEvolucao.medicacoes === 'string' ? newEvolucao.medicacoes.split(',').map((item: string) => item.trim()) : [])
+          : (newEvolucao.medicacoes && typeof newEvolucao.medicacoes === 'string' ? (newEvolucao.medicacoes as string).split(',').map((item: string) => item.trim()) : [])
       }
 
       await api.post('/evolucoes', evolucaoData)
