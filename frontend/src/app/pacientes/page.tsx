@@ -649,6 +649,7 @@ export default function PacientesPage() {
         {/* Portal Section */}
         <PortalSection 
           pacienteId={currentPaciente._id} 
+          pacienteNome={currentPaciente.nome}
           isSearchMode={isSearchMode}
           searchFields={pendingSearchFields}
           onSearchFieldChange={handleSearchFieldChange}
