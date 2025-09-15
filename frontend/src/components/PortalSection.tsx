@@ -370,7 +370,17 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
 
     setIsSaving(true)
     try {
-      await api.put(`/evolucoes/${evolucao._id}`, evolucao)
+      // Garantir que medicacoes seja sempre um array
+      const evolucaoData = {
+        ...evolucao,
+        medicacoes: Array.isArray(evolucao.medicacoes) 
+          ? evolucao.medicacoes 
+          : (evolucao.medicacoes && typeof evolucao.medicacoes === 'string' 
+              ? (evolucao.medicacoes as string).split(',').map(item => item.trim()) 
+              : [])
+      }
+      
+      await api.put(`/evolucoes/${evolucao._id}`, evolucaoData)
       const updatedEvolucoes = [...editedEvolucoes]
       updatedEvolucoes[index] = { ...updatedEvolucoes[index], _editing: false }
       setEditedEvolucoes(updatedEvolucoes)
@@ -386,10 +396,20 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
 
   const handleInputChange = (index: number, field: keyof Evolucao, value: any) => {
     const updatedEvolucoes = [...editedEvolucoes]
-    updatedEvolucoes[index] = {
-      ...updatedEvolucoes[index],
-      [field]: value
+    
+    // Tratamento especial para o campo medicacoes
+    if (field === 'medicacoes' && typeof value === 'string') {
+      updatedEvolucoes[index] = {
+        ...updatedEvolucoes[index],
+        [field]: value.split(',').map(item => item.trim())
+      }
+    } else {
+      updatedEvolucoes[index] = {
+        ...updatedEvolucoes[index],
+        [field]: value
+      }
     }
+    
     setEditedEvolucoes(updatedEvolucoes)
   }
 
