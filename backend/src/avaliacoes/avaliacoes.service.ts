@@ -70,7 +70,7 @@ export class AvaliacoesService {
       nome_arquivo: string;
       tipo: string;
       tamanho: number;
-      data: Buffer;
+      data: string; // Base64
     }
   ): Promise<Avaliacao> {
     const avaliacao = await this.findByPacienteId(pacienteId);

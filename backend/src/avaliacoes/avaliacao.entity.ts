@@ -22,7 +22,7 @@ export class Avaliacao {
     nome_arquivo: String,
     tipo: String,
     tamanho: Number,
-    data: Buffer, // Armazenar arquivo como binário
+    data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
   cardiologista: Array<{
@@ -30,7 +30,7 @@ export class Avaliacao {
     nome_arquivo: string;
     tipo: string;
     tamanho: number;
-    data: Buffer;
+    data: string; // Base64
     data_upload: Date;
   }>;
 
@@ -39,7 +39,7 @@ export class Avaliacao {
     nome_arquivo: String,
     tipo: String,
     tamanho: Number,
-    data: Buffer, // Armazenar arquivo como binário
+    data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
   endocrino: Array<{
@@ -47,7 +47,7 @@ export class Avaliacao {
     nome_arquivo: string;
     tipo: string;
     tamanho: number;
-    data: Buffer;
+    data: string; // Base64
     data_upload: Date;
   }>;
 
@@ -56,7 +56,7 @@ export class Avaliacao {
     nome_arquivo: String,
     tipo: String,
     tamanho: Number,
-    data: Buffer, // Armazenar arquivo como binário
+    data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
   nutricionista: Array<{
@@ -64,7 +64,7 @@ export class Avaliacao {
     nome_arquivo: string;
     tipo: string;
     tamanho: number;
-    data: Buffer;
+    data: string; // Base64
     data_upload: Date;
   }>;
 
@@ -73,7 +73,7 @@ export class Avaliacao {
     nome_arquivo: String,
     tipo: String,
     tamanho: Number,
-    data: Buffer, // Armazenar arquivo como binário
+    data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
   psicologa: Array<{
@@ -81,7 +81,7 @@ export class Avaliacao {
     nome_arquivo: string;
     tipo: string;
     tamanho: number;
-    data: Buffer;
+    data: string; // Base64
     data_upload: Date;
   }>;
 
@@ -90,7 +90,7 @@ export class Avaliacao {
     nome_arquivo: String,
     tipo: String,
     tamanho: Number,
-    data: Buffer, // Armazenar arquivo como binário
+    data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
   outros: Array<{
@@ -98,7 +98,7 @@ export class Avaliacao {
     nome_arquivo: string;
     tipo: string;
     tamanho: number;
-    data: Buffer;
+    data: string; // Base64
     data_upload: Date;
   }>;
 }

@@ -118,7 +118,7 @@ export class AvaliacoesController {
         nome_arquivo: `${randomUUID()}_${file.originalname}`,
         tipo: file.mimetype,
         tamanho: file.size,
-        data: file.buffer, // Armazenar dados binários
+        data: file.buffer.toString('base64'), // Converter para Base64 (binário 64 bits)
       };
 
       avaliacao = await this.avaliacoesService.addFileToField(
@@ -156,7 +156,9 @@ export class AvaliacoesController {
       'Content-Disposition': `inline; filename="${file.nome_original}"`,
     });
     
-    return res.send(file.data);
+    // Converter de Base64 para Buffer antes de enviar
+    const fileBuffer = Buffer.from(file.data, 'base64');
+    return res.send(fileBuffer);
   }
 
   @Delete('file/:pacienteId/:fieldName/:fileName')
