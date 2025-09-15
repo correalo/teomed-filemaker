@@ -1,4 +1,4 @@
-# Correções na Busca de Evoluções - TEOMED
+# Correções no Módulo de Evoluções - TEOMED
 
 ## Problema Identificado
 
@@ -71,6 +71,89 @@ O sistema TEOMED apresentava problemas na busca e exibição das evoluções dos
 3. Teste do frontend para verificar se as evoluções estão sendo exibidas corretamente
 4. Verificação dos logs do backend para confirmar que as queries estão sendo executadas corretamente
 
+## Correção no Processamento do Campo Medicações
+
+### Problema Identificado
+
+O sistema TEOMED apresentava um erro de hydration ao salvar evoluções devido ao processamento inadequado do campo `medicacoes`. O erro ocorria porque:
+
+1. O campo `medicacoes` é definido como um array de strings no modelo de dados
+2. Em alguns casos, o campo estava sendo tratado como string durante a edição
+3. Ao salvar, o sistema tentava enviar uma string para um campo que deveria ser um array
+
+### Soluções Implementadas
+
+#### 1. Correção do método `handleSaveEvolucao`
+
+- Modificamos o método para garantir que o campo `medicacoes` seja sempre um array antes de enviar para o backend:
+
+```typescript
+const handleSaveEvolucao = async (index: number) => {
+  const evolucao = editedEvolucoes[index]
+  if (!evolucao._id) return
+
+  setIsSaving(true)
+  try {
+    // Garantir que medicacoes seja sempre um array
+    const evolucaoData = {
+      ...evolucao,
+      medicacoes: Array.isArray(evolucao.medicacoes) 
+        ? evolucao.medicacoes 
+        : (evolucao.medicacoes && typeof evolucao.medicacoes === 'string' 
+            ? (evolucao.medicacoes as string).split(',').map(item => item.trim()) 
+            : [])
+    }
+    
+    await api.put(`/evolucoes/${evolucao._id}`, evolucaoData)
+    // Resto do código...
+  } catch (error: any) {
+    // Tratamento de erro...
+  }
+}
+```
+
+#### 2. Melhoria no método `handleInputChange`
+
+- Adicionamos tratamento especial para o campo `medicacoes` para converter strings em arrays durante a edição:
+
+```typescript
+const handleInputChange = (index: number, field: keyof Evolucao, value: any) => {
+  const updatedEvolucoes = [...editedEvolucoes]
+  
+  // Tratamento especial para o campo medicacoes
+  if (field === 'medicacoes' && typeof value === 'string') {
+    updatedEvolucoes[index] = {
+      ...updatedEvolucoes[index],
+      [field]: value.split(',').map(item => item.trim())
+    }
+  } else {
+    updatedEvolucoes[index] = {
+      ...updatedEvolucoes[index],
+      [field]: value
+    }
+  }
+  
+  setEditedEvolucoes(updatedEvolucoes)
+}
+```
+
+### Detalhes Técnicos
+
+- O campo `medicacoes` é definido como `string[]` na interface `Evolucao`
+- Durante a edição, o usuário pode inserir valores separados por vírgula
+- A correção garante que esses valores sejam convertidos em array antes de serem salvos
+- O tratamento é feito tanto no momento da edição quanto no momento do salvamento
+
+### Testes Realizados
+
+1. Edição de uma evolução existente com medicações
+2. Inserção de medicações como texto separado por vírgulas
+3. Salvamento da evolução e verificação do formato no backend
+
 ## Conclusão
 
-Estas correções garantem que as evoluções sejam encontradas corretamente para todos os pacientes, usando o mesmo nome de campo que está no banco de dados (`paciente_id`), e lidando adequadamente com diferentes formatos de ID, mantendo a consistência entre frontend e backend.
+Estas correções garantem que:
+
+1. As evoluções sejam encontradas corretamente para todos os pacientes, usando o mesmo nome de campo que está no banco de dados (`paciente_id`), e lidando adequadamente com diferentes formatos de ID
+2. O campo `medicacoes` seja sempre processado corretamente como um array, evitando erros de hydration durante o salvamento
+3. A experiência do usuário seja consistente, permitindo a entrada de medicações tanto como array quanto como texto separado por vírgulas
