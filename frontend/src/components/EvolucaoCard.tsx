@@ -138,10 +138,22 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
         paciente_id: pacienteId
       };
 
-      const response = await api.post('/evolucoes', evolucaoToCreate);
+      // Usar a rota de API local para evitar problemas de CORS
+      const token = localStorage.getItem('token')
       
-      if (response.data) {
-        const updatedEvolucoes = [...editedEvolucoes, response.data];
+      const response = await fetch('/api/evolucoes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(evolucaoToCreate)
+      })
+      
+      const data = await response.json()
+      
+      if (data) {
+        const updatedEvolucoes = [...editedEvolucoes, data];
         setEditedEvolucoes(updatedEvolucoes);
         if (onUpdate) {
           onUpdate(updatedEvolucoes);

@@ -29,7 +29,7 @@ export default function PacientesPage() {
   useEffect(() => {
     setMounted(true)
     if (typeof window !== 'undefined') {
-      const API_BASE_URL = 'http://localhost:3004'
+      const API_BASE_URL = 'http://localhost:3001'
       const token = localStorage.getItem('token')
       if (!token) {
         router.push('/')

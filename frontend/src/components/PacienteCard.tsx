@@ -185,7 +185,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
       return;
     }
     
-    const url = `http://localhost:3004/pacientes/${paciente._id}`;
+    const url = `/api/pacientes/${paciente._id}`;
     console.log('URL da requisição:', url);
     
     try {
@@ -409,7 +409,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
               onChange={(value) => onSearchFieldChange?.('nome', value)}
               placeholder="Buscar por nome..."
               className={`filemaker-input w-full text-sm sm:text-base bg-orange-50 border-orange-300 focus:border-orange-500`}
-              apiEndpoint="http://localhost:3004/pacientes/autocomplete/nomes"
+              apiEndpoint="/api/pacientes/autocomplete/nomes"
             />
           ) : (
             <input

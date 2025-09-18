@@ -17,7 +17,7 @@ interface PortalSectionProps {
 }
 
 const api = axios.create({
-  baseURL: 'http://localhost:3004',
+  baseURL: 'http://localhost:3001',
 })
 
 api.interceptors.request.use((config) => {
@@ -39,12 +39,31 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
   const [showAddForm, setShowAddForm] = useState(false)
   const [pacienteNome, setPacienteNome] = useState<string>(pacienteNomeProp || '')
   const [uploadedFiles, setUploadedFiles] = useState<{[key: string]: File[]}>({})
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [modalContent, setModalContent] = useState<string | null>(null)
+  const [modalContentType, setModalContentType] = useState<string>('application/pdf')
+  const [modalFileName, setModalFileName] = useState<string>('')
+  const [isLoading, setIsLoading] = useState(false)
   const toast = useToast()
   
   // Carregar arquivos existentes das avaliações
   const { data: avaliacaoData, refetch: refetchAvaliacao } = useQuery({
     queryKey: ['avaliacao', pacienteId],
-    queryFn: () => api.get(`/avaliacoes/paciente/${pacienteId}`).then(res => res.data),
+    queryFn: async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const response = await fetch(`/api/avaliacoes/paciente/${pacienteId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar avaliações: ${response.status}`);
+      }
+      
+      return await response.json();
+    },
     enabled: activeTab === 'avaliacoes' && !!pacienteId
   })
 
@@ -59,8 +78,13 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
         if (avaliacaoData[category] && avaliacaoData[category].length > 0) {
           filesFromBackend[category] = avaliacaoData[category].map((fileData: any) => {
             // Criar um objeto File mock para exibição
-            const mockFile = new File([''], fileData.originalName, { type: fileData.mimetype })
-            Object.defineProperty(mockFile, 'size', { value: fileData.size })
+            const mockFile = new File([''], fileData.nome_original || 'arquivo', { 
+              type: fileData.tipo || 'application/pdf'
+            })
+            // Definir propriedades adicionais no objeto File
+            Object.defineProperty(mockFile, 'size', { value: fileData.tamanho || 0 })
+            Object.defineProperty(mockFile, 'nome_arquivo', { value: fileData.nome_arquivo })
+            Object.defineProperty(mockFile, 'nome_original', { value: fileData.nome_original })
             return mockFile
           })
         }
@@ -87,13 +111,41 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
   // Query para evoluções
   const { data: evolucoesFetched, refetch: refetchEvolucoes } = useQuery({
     queryKey: ['evolucoes', pacienteId],
-    queryFn: () => api.get('/evolucoes', { params: { pacienteId } }).then(res => res.data),
+    queryFn: async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const response = await fetch(`/api/evolucoes?pacienteId=${pacienteId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar evoluções: ${response.status}`);
+      }
+      
+      return await response.json();
+    },
     enabled: activeTab === 'evolucoes' && !!pacienteId
   })
 
   const { data: receitas } = useQuery({
     queryKey: ['receitas', pacienteId],
-    queryFn: () => api.get(`/receitas/paciente/${pacienteId}`).then(res => res.data),
+    queryFn: async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const response = await fetch(`/api/receitas/paciente/${pacienteId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar receitas: ${response.status}`);
+      }
+      
+      return await response.json();
+    },
     enabled: activeTab === 'receitas'
   })
 
@@ -148,11 +200,22 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
         })
         formData.append('nome_paciente', pacienteNome)
 
-        const response = await api.post(`/avaliacoes/upload/${pacienteId}/${fieldId}`, formData, {
+        // Usar a rota de API local para evitar problemas de CORS
+        const token = localStorage.getItem('token')
+        
+        const response = await fetch(`/api/avaliacoes/upload/${pacienteId}/${fieldId}`, {
+          method: 'POST',
           headers: {
-            'Content-Type': 'multipart/form-data'
-          }
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
         })
+        
+        if (!response.ok) {
+          throw new Error(`Erro ao fazer upload: ${response.status}`)
+        }
+        
+        const data = await response.json()
 
         // Atualizar estado local com os arquivos enviados
         setUploadedFiles(prev => ({
@@ -171,27 +234,58 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
     }
   }
 
-  // Função para abrir arquivo
+  // Função para abrir arquivo em modal
   const openFile = (fieldId: string, fileName: string) => {
-    const url = `http://localhost:3004/avaliacoes/file/${pacienteId}/${fieldId}/${fileName}`
+    // Mostrar feedback visual imediato
+    toast.info('Carregando arquivo...')
+    
+    // Definir o nome do arquivo para exibição na modal
+    const file = uploadedFiles[fieldId]?.find(f => f.name === fileName || (f as any).nome_arquivo === fileName)
+    const displayName = (file as any)?.nome_original || file?.name || fileName
+    setModalFileName(displayName)
+    
+    // Limpar conteúdo anterior e definir estado de carregamento
+    setModalContent(null)
+    setIsLoading(true)
+    
+    // Abrir a modal imediatamente para feedback visual
+    setIsModalOpen(true)
+    
+    // Construir URL para o arquivo usando a rota de API local
+    const fileUrl = `/api/avaliacoes/file/${pacienteId}/${fieldId}/${fileName}`
     const token = localStorage.getItem('token')
     
     if (token) {
       // Criar um link temporário com autenticação
-      fetch(url, {
+      fetch(fileUrl, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
-      .then(response => response.blob())
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Erro ao carregar arquivo: ${response.status} ${response.statusText}`)
+        }
+        // Definir o tipo de conteúdo para renderização correta
+        const contentType = response.headers.get('content-type') || 'application/pdf'
+        setModalContentType(contentType)
+        return response.blob()
+      })
       .then(blob => {
         const fileUrl = URL.createObjectURL(blob)
-        window.open(fileUrl, '_blank')
+        setModalContent(fileUrl)
+        setIsLoading(false) // Desativar indicador de carregamento
       })
       .catch(error => {
         console.error('Erro ao abrir arquivo:', error)
-        toast.error('Erro ao abrir arquivo')
+        toast.error(`Erro ao abrir arquivo: ${error.message}`)
+        setIsLoading(false) // Desativar indicador de carregamento mesmo em caso de erro
       })
+    } else {
+      toast.error('Erro de autenticação. Faça login novamente.')
+      // Fechar a modal em caso de erro de autenticação
+      setIsModalOpen(false)
+      setIsLoading(false)
     }
   }
 
@@ -201,8 +295,20 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
     if (!file) return
 
     try {
-      // Remover arquivo do backend
-      await api.delete(`/avaliacoes/file/${pacienteId}/${fieldId}/${file.name}`)
+      // Remover arquivo do backend usando a rota de API local
+      const token = localStorage.getItem('token')
+      
+      const response = await fetch(`/api/avaliacoes/file/${pacienteId}/${fieldId}/${file.name}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Erro ao remover arquivo: ${response.status}`)
+      }
       
       // Atualizar estado local
       setUploadedFiles(prev => ({
@@ -242,9 +348,21 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
         paciente_id: pacienteId
       }
 
-      const response = await api.post('/evolucoes', evolucaoToCreate)
+      // Usar a rota de API local para evitar problemas de CORS
+      const token = localStorage.getItem('token')
       
-      if (response.data) {
+      const response = await fetch('/api/evolucoes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(evolucaoToCreate)
+      })
+      
+      const data = await response.json()
+      
+      if (data) {
         await refetchEvolucoes()
         
         // Resetar formulário
@@ -312,7 +430,21 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
           : (newEvolucao.medicacoes && typeof newEvolucao.medicacoes === 'string' ? (newEvolucao.medicacoes as string).split(',').map((item: string) => item.trim()) : [])
       }
 
-      await api.post('/evolucoes', evolucaoData)
+      // Usar a rota de API local para evitar problemas de CORS
+      const token = localStorage.getItem('token')
+      
+      const response = await fetch('/api/evolucoes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(evolucaoData)
+      })
+      
+      if (!response.ok) {
+        throw new Error(`Erro ao criar evolução: ${response.status}`)
+      }
       
       // Resetar formulário
       setNewEvolucao({
@@ -343,12 +475,23 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
     }
 
     try {
+      // Remover do estado local imediatamente para feedback visual
+      const updatedEvolucoes = [...evolucoes];
+      updatedEvolucoes.splice(index, 1);
+      setEvolucoes(updatedEvolucoes);
+      setEditedEvolucoes(updatedEvolucoes);
+      
+      // Enviar requisição para o backend
       await api.delete(`/evolucoes/${evolucaoId}`)
+      
+      // Recarregar dados do servidor para garantir sincronização
       await refetchEvolucoes()
       toast.success('Evolução deletada com sucesso!')
     } catch (error: any) {
       console.error('Erro ao deletar evolução:', error)
       toast.error(`Erro ao deletar evolução: ${error.message}`)
+      // Recarregar dados em caso de erro para restaurar o estado correto
+      await refetchEvolucoes()
     }
   }
 
@@ -759,7 +902,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                         <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded text-xs">
                           <div 
                             className="flex items-center space-x-2 cursor-pointer hover:text-blue-600"
-                            onClick={() => openFile(campo.id, file.name)}
+                            onClick={() => openFile(campo.id, (file as any).nome_arquivo || file.name)}
                           >
                             <div className="w-4 h-4 text-gray-500">
                               {file.type === 'application/pdf' ? (
@@ -772,11 +915,11 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                                 </svg>
                               )}
                             </div>
-                            <span className="truncate max-w-[120px]" title={file.name}>
-                              {file.name}
+                            <span className="truncate max-w-[120px]" title={(file as any).nome_original || file.name}>
+                              {(file as any).nome_original || file.name}
                             </span>
                             <span className="text-gray-400">
-                              ({(file.size / 1024 / 1024).toFixed(1)}MB)
+                              {file.size > 0 ? `(${(file.size / 1024 / 1024).toFixed(1)}MB)` : ''}
                             </span>
                           </div>
                           <button
@@ -875,6 +1018,12 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
       default:
         return null
     }
+  }
+
+  // Função para fechar a modal
+  const closeModal = () => {
+    setIsModalOpen(false)
+    setModalContent(null)
   }
 
   return (
@@ -1165,6 +1314,113 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
       {!isSearchMode && (
         <div className="mt-4">
           {renderContent()}
+        </div>
+      )}
+      
+      {/* Modal para visualização de arquivos */}
+      {isModalOpen && modalContent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-6xl max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="text-lg font-semibold truncate">{modalFileName}</h3>
+              <button 
+                onClick={closeModal}
+                className="text-gray-500 hover:text-gray-700 focus:outline-none"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-1 bg-gray-100">
+              {modalContent && (
+                <div className="bg-gray-200 p-2 flex justify-end">
+                  <a 
+                    href={modalContent} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm flex items-center"
+                  >
+                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    Abrir em nova aba
+                  </a>
+                </div>
+              )}
+              
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center h-[70vh]">
+                  <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+                  <p className="text-gray-600">Carregando arquivo...</p>
+                </div>
+              ) : modalContent ? (
+                modalContentType.includes('pdf') ? (
+                  <div className="w-full h-full min-h-[70vh] flex flex-col">
+                    {/* Usar renderização direta do PDF no Chromium */}
+                    <iframe 
+                      src={modalContent}
+                      className="w-full h-full flex-1" 
+                      title={modalFileName}
+                      frameBorder="0"
+                    />
+                    {/* Botões de ação para visualização alternativa */}
+                    <div className="bg-gray-100 p-4 border-t border-gray-300 text-center">
+                      <p className="text-sm text-gray-600 mb-2">Opções adicionais de visualização:</p>
+                      <div className="flex justify-center space-x-3">
+                        <a 
+                          href={modalContent} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm flex items-center"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          Abrir em nova aba
+                        </a>
+                        <a 
+                          href={modalContent} 
+                          download={modalFileName}
+                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm flex items-center"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Baixar arquivo
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ) : modalContentType.includes('image') ? (
+                  <div className="flex items-center justify-center h-full">
+                    <img 
+                      src={modalContent} 
+                      alt={modalFileName} 
+                      className="max-w-full max-h-[70vh] object-contain" 
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full p-8 text-center">
+                    <div>
+                      <p className="mb-4">Este tipo de arquivo não pode ser visualizado diretamente.</p>
+                      <a 
+                        href={modalContent} 
+                        download={modalFileName}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                      >
+                        Baixar Arquivo
+                      </a>
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div className="flex items-center justify-center h-[70vh]">
+                  <p className="text-gray-500">Nenhum arquivo selecionado</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

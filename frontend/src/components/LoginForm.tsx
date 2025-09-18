@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import axios from 'axios'
 
 interface LoginFormProps {
   onLogin: () => void
@@ -19,29 +18,59 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
     e.preventDefault()
     setLoading(true)
     setError('')
+    
+    // Validar campos
+    if (!username.trim()) {
+      setError('Por favor, digite seu nome de usuário')
+      setLoading(false)
+      return
+    }
+    
+    if (!password) {
+      setError('Por favor, digite sua senha')
+      setLoading(false)
+      return
+    }
 
     try {
-      // Credenciais fixas para garantir o login
-      const response = await axios.post('http://localhost:3004/auth/login', {
-        username: 'admin',
-        password: 'teomed2024',
+      console.log('Iniciando tentativa de login...')
+      
+      // Usar as credenciais digitadas pelo usuário
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username,
+          password,
+        })
       })
+      
+      console.log('Resposta recebida:', { status: response.status, ok: response.ok })
 
-      if (response.data && response.data.access_token) {
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || errorData.message || 'Falha na autenticação')
+      }
+
+      const data = await response.json()
+
+      if (data && data.access_token) {
         // Limpar storage
         localStorage.clear()
         sessionStorage.clear()
         
         // Armazenar o token em múltiplos locais para garantir
-        localStorage.setItem('token', response.data.access_token)
-        sessionStorage.setItem('token', response.data.access_token)
+        localStorage.setItem('token', data.access_token)
+        sessionStorage.setItem('token', data.access_token)
         
         // Armazenar dados do usuário
-        const userData = response.data.user || { id: 1, username: 'admin', role: 'admin' }
+        const userData = data.user || { id: 1, username: 'admin', role: 'admin' }
         localStorage.setItem('user', JSON.stringify(userData))
         
         // Cookie com configurações adequadas
-        document.cookie = `token=${response.data.access_token}; path=/; max-age=86400`
+        document.cookie = `token=${data.access_token}; path=/; max-age=86400`
         
         console.log('Login realizado com sucesso!')
         
@@ -57,7 +86,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
       }
     } catch (err: any) {
       console.error('Falha no login:', err)
-      setError('Falha na autenticação. Por favor, tente novamente.')
+      setError(err.message || 'Falha na autenticação. Por favor, tente novamente.')
     } finally {
       setLoading(false)
     }
