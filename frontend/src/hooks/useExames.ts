@@ -22,10 +22,10 @@ interface ExameData {
   laboratoriais?: FileInfo[];
   usg?: FileInfo[];
   eda?: FileInfo[];
-  colono?: FileInfo[];
-  anatomia_patologica?: FileInfo[];
+  colono?: FileInfo[]; // Ecocardiograma
+  anatomia_patologica?: FileInfo[]; // RX de Tórax
   tomografia?: FileInfo[];
-  bioimpedancia?: FileInfo[];
+  bioimpedancia?: FileInfo[]; // Polissonografia
   outros?: FileInfo[];
   outros2?: FileInfo[];
 }

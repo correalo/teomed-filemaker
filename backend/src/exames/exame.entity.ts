@@ -76,6 +76,7 @@ export class Exame {
     data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
+  // Renomeado para ECOCARDIOGRAMA na interface
   colono: Array<{
     nome_original: string;
     nome_arquivo: string;
@@ -93,6 +94,7 @@ export class Exame {
     data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
+  // Renomeado para RX DE TÓRAX na interface
   anatomia_patologica: Array<{
     nome_original: string;
     nome_arquivo: string;
@@ -127,6 +129,7 @@ export class Exame {
     data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
+  // Renomeado para POLISSONOGRAFIA na interface
   bioimpedancia: Array<{
     nome_original: string;
     nome_arquivo: string;

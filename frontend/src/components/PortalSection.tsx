@@ -128,7 +128,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
       const filesFromBackend: {[key: string]: File[]} = {}
       
       // Converter dados do backend para formato de File (mock)
-      const categories = ['laboratoriais', 'usg', 'eda', 'colono', 'anatomia_patologica', 'tomografia', 'bioimpedancia', 'outros', 'outros2']
+      const categories = ['laboratoriais', 'usg', 'eda', 'colono', 'anatomia_patologica', 'tomografia', 'bioimpedancia', 'outros', 'outros2'] // colono=ecocardiograma, anatomia_patologica=rx_de_torax, bioimpedancia=polissonografia
       categories.forEach(category => {
         if (exameData[category] && exameData[category].length > 0) {
           filesFromBackend[category] = exameData[category].map((fileData: any) => {
@@ -1044,10 +1044,10 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                   { id: 'laboratoriais', label: 'EXAMES LABORATORIAIS' },
                   { id: 'usg', label: 'USG' },
                   { id: 'eda', label: 'EDA' },
-                  { id: 'colono', label: 'COLONO' },
-                  { id: 'anatomia_patologica', label: 'ANATOMIA PATOLÓGICA' },
+                  { id: 'colono', label: 'ECOCARDIOGRAMA' },
+                  { id: 'anatomia_patologica', label: 'RX DE TÓRAX' },
                   { id: 'tomografia', label: 'TOMOGRAFIA' },
-                  { id: 'bioimpedancia', label: 'BIOIMPEDÂNCIA' },
+                  { id: 'bioimpedancia', label: 'POLISSONOGRAFIA' },
                   { id: 'outros', label: 'OUTROS' },
                   { id: 'outros2', label: 'OUTROS 2' }
                 ].map((campo) => (

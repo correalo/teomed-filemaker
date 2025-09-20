@@ -25,6 +25,7 @@ export class CreateExameDto {
     data: string;
     data_upload?: Date;
   }>;
+  // Renomeado para ECOCARDIOGRAMA na interface
   colono?: Array<{
     nome_original: string;
     nome_arquivo: string;
@@ -33,6 +34,7 @@ export class CreateExameDto {
     data: string;
     data_upload?: Date;
   }>;
+  // Renomeado para RX DE TÓRAX na interface
   anatomia_patologica?: Array<{
     nome_original: string;
     nome_arquivo: string;
@@ -49,6 +51,7 @@ export class CreateExameDto {
     data: string;
     data_upload?: Date;
   }>;
+  // Renomeado para POLISSONOGRAFIA na interface
   bioimpedancia?: Array<{
     nome_original: string;
     nome_arquivo: string;
