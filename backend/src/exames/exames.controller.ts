@@ -1,66 +1,43 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseInterceptors,
-  UploadedFiles,
-  UseGuards,
-  BadRequestException,
-  Res,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseInterceptors, UploadedFiles, BadRequestException, Res } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { AvaliacoesService } from './avaliacoes.service';
-import { CreateAvaliacaoDto } from './dto/create-avaliacao.dto';
-import { UpdateAvaliacaoDto } from './dto/update-avaliacao.dto';
 import { memoryStorage } from 'multer';
 import { randomUUID } from 'crypto';
+import { ExamesService } from './exames.service';
+import { CreateExameDto } from './dto/create-exame.dto';
+import { UpdateExameDto } from './dto/update-exame.dto';
 
-@Controller('avaliacoes')
-@UseGuards(JwtAuthGuard)
-export class AvaliacoesController {
-  constructor(private readonly avaliacoesService: AvaliacoesService) {}
+@Controller('exames')
+export class ExamesController {
+  constructor(private readonly examesService: ExamesService) {}
 
   @Post()
-  create(@Body() createAvaliacaoDto: CreateAvaliacaoDto) {
-    return this.avaliacoesService.create(createAvaliacaoDto);
+  create(@Body() createExameDto: CreateExameDto) {
+    return this.examesService.create(createExameDto);
   }
 
   @Get()
   findAll() {
-    return this.avaliacoesService.findAll();
+    return this.examesService.findAll();
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.avaliacoesService.findOne(id);
+    return this.examesService.findOne(id);
   }
 
   @Get('paciente/:pacienteId')
   findByPacienteId(@Param('pacienteId') pacienteId: string) {
-    return this.avaliacoesService.findByPacienteId(pacienteId);
+    return this.examesService.findByPacienteId(pacienteId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAvaliacaoDto: UpdateAvaliacaoDto) {
-    return this.avaliacoesService.update(id, updateAvaliacaoDto);
-  }
-
-  @Patch('paciente/:pacienteId')
-  updateByPacienteId(
-    @Param('pacienteId') pacienteId: string,
-    @Body() updateAvaliacaoDto: UpdateAvaliacaoDto
-  ) {
-    return this.avaliacoesService.updateByPacienteId(pacienteId, updateAvaliacaoDto);
+  update(@Param('id') id: string, @Body() updateExameDto: UpdateExameDto) {
+    return this.examesService.update(id, updateExameDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.avaliacoesService.remove(id);
+    return this.examesService.remove(id);
   }
 
   @Post('upload/:pacienteId/:fieldName')
@@ -97,18 +74,18 @@ export class AvaliacoesController {
       throw new BadRequestException('Nenhum arquivo foi enviado');
     }
 
-    const validFields = ['cardiologista', 'endocrino', 'nutricionista', 'psicologa', 'outros', 'outros2'];
+    const validFields = ['laboratoriais', 'usg', 'eda', 'colono', 'anatomia_patologica', 'tomografia', 'bioimpedancia', 'outros', 'outros2'];
     if (!validFields.includes(fieldName)) {
       throw new BadRequestException('Campo inválido');
     }
 
-    let avaliacao = await this.avaliacoesService.findByPacienteId(pacienteId);
-    if (!avaliacao) {
-      avaliacao = await this.avaliacoesService.create({
+    let exame = await this.examesService.findByPacienteId(pacienteId);
+    if (!exame) {
+      exame = await this.examesService.create({
         paciente_id: pacienteId,
         nome_paciente: nomePaciente || '',
         [fieldName]: [],
-      } as CreateAvaliacaoDto);
+      } as CreateExameDto);
     }
 
     // Adicionar cada arquivo
@@ -121,7 +98,7 @@ export class AvaliacoesController {
         data: file.buffer.toString('base64'), // Converter para Base64 (binário 64 bits)
       };
 
-      avaliacao = await this.avaliacoesService.addFileToField(
+      exame = await this.examesService.addFileToField(
         pacienteId,
         fieldName,
         fileInfo
@@ -130,7 +107,7 @@ export class AvaliacoesController {
 
     return {
       message: `${files.length} arquivo(s) enviado(s) com sucesso`,
-      avaliacao,
+      exame,
     };
   }
 
@@ -141,12 +118,12 @@ export class AvaliacoesController {
     @Param('fileName') fileName: string,
     @Res() res: any
   ) {
-    const avaliacao = await this.avaliacoesService.findByPacienteId(pacienteId);
-    if (!avaliacao || !avaliacao[fieldName]) {
+    const exame = await this.examesService.findByPacienteId(pacienteId);
+    if (!exame || !exame[fieldName]) {
       throw new BadRequestException('Arquivo não encontrado');
     }
 
-    const file = avaliacao[fieldName].find(f => f.nome_arquivo === fileName);
+    const file = exame[fieldName].find(f => f.nome_arquivo === fileName);
     if (!file) {
       throw new BadRequestException('Arquivo não encontrado');
     }
@@ -167,11 +144,11 @@ export class AvaliacoesController {
     @Param('fieldName') fieldName: string,
     @Param('fileName') fileName: string
   ) {
-    const validFields = ['cardiologista', 'endocrino', 'nutricionista', 'psicologa', 'outros', 'outros2'];
+    const validFields = ['laboratoriais', 'usg', 'eda', 'colono', 'anatomia_patologica', 'tomografia', 'bioimpedancia', 'outros', 'outros2'];
     if (!validFields.includes(fieldName)) {
       throw new BadRequestException('Campo inválido');
     }
 
-    return this.avaliacoesService.removeFileFromField(pacienteId, fieldName, fileName);
+    return this.examesService.removeFileFromField(pacienteId, fieldName, fileName);
   }
 }

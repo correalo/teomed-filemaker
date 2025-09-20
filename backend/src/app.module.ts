@@ -8,6 +8,7 @@ import { PacientesModule } from './pacientes/pacientes.module';
 import { ReceitasModule } from './receitas/receitas.module';
 import { EvolucoesModule } from './evolucoes/evolucoes.module';
 import { AvaliacoesModule } from './avaliacoes/avaliacoes.module';
+import { ExamesModule } from './exames/exames.module';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
 
@@ -28,6 +29,7 @@ import { AppController } from './app.controller';
     ReceitasModule,
     EvolucoesModule,
     AvaliacoesModule,
+    ExamesModule,
   ],
   controllers: [AppController],
 })

@@ -1,10 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type AvaliacaoDocument = Avaliacao & Document;
+export type ExameDocument = Exame & Document;
 
-@Schema({ collection: 'avaliacoes' })
-export class Avaliacao {
+@Schema({ collection: 'exames' })
+export class Exame {
   @Prop({ required: true })
   paciente_id: string;
 
@@ -25,7 +25,7 @@ export class Avaliacao {
     data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
-  cardiologista: Array<{
+  laboratoriais: Array<{
     nome_original: string;
     nome_arquivo: string;
     tipo: string;
@@ -42,7 +42,7 @@ export class Avaliacao {
     data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
-  endocrino: Array<{
+  usg: Array<{
     nome_original: string;
     nome_arquivo: string;
     tipo: string;
@@ -59,7 +59,7 @@ export class Avaliacao {
     data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
-  nutricionista: Array<{
+  eda: Array<{
     nome_original: string;
     nome_arquivo: string;
     tipo: string;
@@ -76,7 +76,58 @@ export class Avaliacao {
     data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
-  psicologa: Array<{
+  colono: Array<{
+    nome_original: string;
+    nome_arquivo: string;
+    tipo: string;
+    tamanho: number;
+    data: string; // Base64
+    data_upload: Date;
+  }>;
+
+  @Prop([{
+    nome_original: String,
+    nome_arquivo: String,
+    tipo: String,
+    tamanho: Number,
+    data: String, // Armazenar arquivo como binário de 64 bits (Base64)
+    data_upload: { type: Date, default: Date.now }
+  }])
+  anatomia_patologica: Array<{
+    nome_original: string;
+    nome_arquivo: string;
+    tipo: string;
+    tamanho: number;
+    data: string; // Base64
+    data_upload: Date;
+  }>;
+
+  @Prop([{
+    nome_original: String,
+    nome_arquivo: String,
+    tipo: String,
+    tamanho: Number,
+    data: String, // Armazenar arquivo como binário de 64 bits (Base64)
+    data_upload: { type: Date, default: Date.now }
+  }])
+  tomografia: Array<{
+    nome_original: string;
+    nome_arquivo: string;
+    tipo: string;
+    tamanho: number;
+    data: string; // Base64
+    data_upload: Date;
+  }>;
+
+  @Prop([{
+    nome_original: String,
+    nome_arquivo: String,
+    tipo: String,
+    tamanho: Number,
+    data: String, // Armazenar arquivo como binário de 64 bits (Base64)
+    data_upload: { type: Date, default: Date.now }
+  }])
+  bioimpedancia: Array<{
     nome_original: string;
     nome_arquivo: string;
     tipo: string;
@@ -120,4 +171,4 @@ export class Avaliacao {
   }>;
 }
 
-export const AvaliacaoSchema = SchemaFactory.createForClass(Avaliacao);
+export const ExameSchema = SchemaFactory.createForClass(Exame);

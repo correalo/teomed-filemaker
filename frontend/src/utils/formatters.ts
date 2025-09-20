@@ -242,3 +242,24 @@ export const calculateIMC = (peso: string, altura: string): string => {
   const imc = pesoNum / (alturaNum * alturaNum)
   return imc.toFixed(2)
 }
+
+export const formatDate = (date: string | Date | undefined | null): string => {
+  if (!date) return ''
+  
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    
+    if (isNaN(dateObj?.getTime())) {
+      return ''
+    }
+    
+    return dateObj.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
+  } catch (error) {
+    console.error('Erro ao formatar data:', error)
+    return ''
+  }
+}

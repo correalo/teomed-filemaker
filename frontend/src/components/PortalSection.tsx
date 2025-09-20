@@ -1,12 +1,17 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useToast } from './Toast'
+import { useAvaliacao } from '../hooks/useAvaliacao'
+import { useEvolucoes } from '../hooks/useEvolucoes'
+import { useReceitas } from '../hooks/useReceitas'
+import { useExame } from '../hooks/useExames'
 import { Evolucao, EvolucaoSearchFields } from '../types/evolucao'
+import { formatDate } from '../utils/formatters'
 
 interface PortalSectionProps {
   pacienteId: string
@@ -46,25 +51,48 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
   const [isLoading, setIsLoading] = useState(false)
   const toast = useToast()
   
-  // Carregar arquivos existentes das avaliações
-  const { data: avaliacaoData, refetch: refetchAvaliacao } = useQuery({
+  // Carregar arquivos existentes  // Buscar avaliação do paciente
+  const { data: avaliacaoData, isLoading: loadingAvaliacao, refetch: refetchAvaliacao } = useQuery({
     queryKey: ['avaliacao', pacienteId],
     queryFn: async () => {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!pacienteId) return null
+      const token = localStorage.getItem('token')
       const response = await fetch(`/api/avaliacoes/paciente/${pacienteId}`, {
         headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          'Authorization': `Bearer ${token}`
         }
-      });
-      
+      })
       if (!response.ok) {
-        throw new Error(`Erro ao buscar avaliações: ${response.status}`);
+        if (response.status === 404) {
+          return null // Não encontrou avaliação para este paciente, o que é normal
+        }
+        throw new Error(`Erro ao buscar avaliação: ${response.status}`)
       }
-      
-      return await response.json();
+      return response.json()
     },
     enabled: activeTab === 'avaliacoes' && !!pacienteId
+  })
+  
+  // Buscar exames do paciente
+  const { data: exameData, isLoading: loadingExame, refetch: refetchExame } = useQuery({
+    queryKey: ['exame', pacienteId],
+    queryFn: async () => {
+      if (!pacienteId) return null
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/exames/paciente/${pacienteId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      if (!response.ok) {
+        if (response.status === 404) {
+          return null // Não encontrou exame para este paciente, o que é normal
+        }
+        throw new Error(`Erro ao buscar exame: ${response.status}`)
+      }
+      return response.json()
+    },
+    enabled: activeTab === 'exames' && !!pacienteId
   })
 
   // Atualizar uploadedFiles quando os dados da avaliação são carregados
@@ -73,7 +101,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
       const filesFromBackend: {[key: string]: File[]} = {}
       
       // Converter dados do backend para formato de File (mock)
-      const categories = ['cardiologista', 'endocrino', 'nutricionista', 'psicologa', 'outros']
+      const categories = ['cardiologista', 'endocrino', 'nutricionista', 'psicologa', 'outros', 'outros2']
       categories.forEach(category => {
         if (avaliacaoData[category] && avaliacaoData[category].length > 0) {
           filesFromBackend[category] = avaliacaoData[category].map((fileData: any) => {
@@ -93,6 +121,33 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
       setUploadedFiles(filesFromBackend)
     }
   }, [avaliacaoData])
+  
+  // Atualizar uploadedFiles quando os dados de exames são carregados
+  useEffect(() => {
+    if (exameData) {
+      const filesFromBackend: {[key: string]: File[]} = {}
+      
+      // Converter dados do backend para formato de File (mock)
+      const categories = ['laboratoriais', 'usg', 'eda', 'colono', 'anatomia_patologica', 'tomografia', 'bioimpedancia', 'outros', 'outros2']
+      categories.forEach(category => {
+        if (exameData[category] && exameData[category].length > 0) {
+          filesFromBackend[category] = exameData[category].map((fileData: any) => {
+            // Criar um objeto File mock para exibição
+            const mockFile = new File([''], fileData.nome_original || 'arquivo', { 
+              type: fileData.tipo || 'application/pdf'
+            })
+            // Definir propriedades adicionais no objeto File
+            Object.defineProperty(mockFile, 'size', { value: fileData.tamanho || 0 })
+            Object.defineProperty(mockFile, 'nome_arquivo', { value: fileData.nome_arquivo })
+            Object.defineProperty(mockFile, 'nome_original', { value: fileData.nome_original })
+            return mockFile
+          })
+        }
+      })
+      
+      setUploadedFiles(prev => activeTab === 'exames' ? filesFromBackend : prev)
+    }
+  }, [exameData, activeTab])
 
   const [newEvolucao, setNewEvolucao] = useState<Evolucao>({
     paciente_id: pacienteId,
@@ -203,7 +258,10 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
         // Usar a rota de API local para evitar problemas de CORS
         const token = localStorage.getItem('token')
         
-        const response = await fetch(`/api/avaliacoes/upload/${pacienteId}/${fieldId}`, {
+        // Determinar a API correta com base no activeTab
+        const apiPath = activeTab === 'exames' ? 'exames' : 'avaliacoes'
+        
+        const response = await fetch(`/api/${apiPath}/upload/${pacienteId}/${fieldId}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -223,8 +281,12 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
           [fieldId]: [...(prev[fieldId] || []), ...validFiles]
         }))
         
-        // Recarregar dados da avaliação para sincronizar com o backend
-        refetchAvaliacao()
+        // Recarregar dados da avaliação ou exame para sincronizar com o backend
+        if (activeTab === 'avaliacoes') {
+          refetchAvaliacao()
+        } else if (activeTab === 'exames') {
+          refetchExame()
+        }
         
         toast.success(`${validFiles.length} arquivo(s) enviado(s) com sucesso para ${fieldId}`)
       } catch (error) {
@@ -251,8 +313,11 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
     // Abrir a modal imediatamente para feedback visual
     setIsModalOpen(true)
     
+    // Determinar a API correta com base no activeTab
+    const apiPath = activeTab === 'exames' ? 'exames' : 'avaliacoes'
+    
     // Construir URL para o arquivo usando a rota de API local
-    const fileUrl = `/api/avaliacoes/file/${pacienteId}/${fieldId}/${fileName}`
+    const fileUrl = `/api/${apiPath}/file/${pacienteId}/${fieldId}/${fileName}`
     const token = localStorage.getItem('token')
     
     if (token) {
@@ -298,7 +363,10 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
       // Remover arquivo do backend usando a rota de API local
       const token = localStorage.getItem('token')
       
-      const response = await fetch(`/api/avaliacoes/file/${pacienteId}/${fieldId}/${file.name}`, {
+      // Determinar a API correta com base no activeTab
+      const apiPath = activeTab === 'exames' ? 'exames' : 'avaliacoes'
+      
+      const response = await fetch(`/api/${apiPath}/file/${pacienteId}/${fieldId}/${file.name}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -316,8 +384,12 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
         [fieldId]: prev[fieldId]?.filter((_, index) => index !== fileIndex) || []
       }))
       
-      // Recarregar dados da avaliação para sincronizar com o backend
-      refetchAvaliacao()
+      // Recarregar dados da avaliação ou exame para sincronizar com o backend
+      if (activeTab === 'avaliacoes') {
+        refetchAvaliacao()
+      } else if (activeTab === 'exames') {
+        refetchExame()
+      }
       
       toast.success('Arquivo removido com sucesso')
     } catch (error) {
@@ -329,7 +401,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
   const tabs = [
     { id: 'evolucoes', label: 'EVOLUÇÕES', color: 'bg-filemaker-blue' },
     { id: 'avaliacoes', label: 'AVALIAÇÕES', color: 'bg-filemaker-green' },
-    { id: 'exames', label: 'EXAMES PRÉ-OP', color: 'bg-filemaker-purple' },
+    { id: 'exames', label: 'EXAMES PRÉ-OP', color: 'bg-black' },
     { id: 'receitas', label: 'RECEITAS', color: 'bg-filemaker-red' },
   ]
 
@@ -847,7 +919,8 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                   { id: 'endocrino', label: 'ENDÓCRINO' },
                   { id: 'nutricionista', label: 'NUTRICIONISTA' },
                   { id: 'psicologa', label: 'PSICÓLOGA' },
-                  { id: 'outros', label: 'OUTROS' }
+                  { id: 'outros', label: 'OUTROS' },
+                  { id: 'outros2', label: 'OUTROS 2' }
                 ].map((campo) => (
                   <div key={campo.id} className="space-y-2">
                     <label className="block text-xs font-medium text-filemaker-text">
@@ -946,10 +1019,129 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
 
       case 'exames':
         return (
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold mb-3 bg-filemaker-purple text-white px-2 py-1 rounded">EXAMES PRÉ-OP</h3>
-            <div className="text-center py-8 text-gray-500">
-              Módulo de exames pré-operatórios em desenvolvimento
+          <div className="bg-white border border-gray-300">
+            <div className="bg-black text-white px-3 py-2 flex justify-between items-center">
+              <h3 className="text-sm font-semibold">EXAMES PRÉ-OP</h3>
+            </div>
+
+            {/* Campo Nome do Paciente */}
+            <div className="p-4 border-b border-gray-200">
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-filemaker-text mb-1">NOME DO PACIENTE</label>
+                <input
+                  type="text"
+                  value={pacienteNome}
+                  readOnly
+                  className="filemaker-input w-full text-sm bg-gray-100"
+                />
+              </div>
+            </div>
+
+            {/* Campos de Upload */}
+            <div className="p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  { id: 'laboratoriais', label: 'EXAMES LABORATORIAIS' },
+                  { id: 'usg', label: 'USG' },
+                  { id: 'eda', label: 'EDA' },
+                  { id: 'colono', label: 'COLONO' },
+                  { id: 'anatomia_patologica', label: 'ANATOMIA PATOLÓGICA' },
+                  { id: 'tomografia', label: 'TOMOGRAFIA' },
+                  { id: 'bioimpedancia', label: 'BIOIMPEDÂNCIA' },
+                  { id: 'outros', label: 'OUTROS' },
+                  { id: 'outros2', label: 'OUTROS 2' }
+                ].map((campo) => (
+                  <div key={campo.id} className="space-y-2">
+                    <label className="block text-xs font-medium text-filemaker-text">
+                      {campo.label}
+                    </label>
+                    <div
+                      className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-black transition-colors cursor-pointer"
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        e.currentTarget.classList.add('border-black', 'bg-gray-50')
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault()
+                        e.currentTarget.classList.remove('border-black', 'bg-gray-50')
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        e.currentTarget.classList.remove('border-black', 'bg-gray-50')
+                        const files = Array.from(e.dataTransfer.files)
+                        handleFileUpload(files, campo.id)
+                      }}
+                      onClick={() => {
+                        const input = document.createElement('input')
+                        input.type = 'file'
+                        input.accept = '.pdf,.heic,.jpeg,.jpg,.png'
+                        input.multiple = true
+                        input.onchange = (e) => {
+                          const files = Array.from((e.target as HTMLInputElement).files || [])
+                          handleFileUpload(files, campo.id)
+                        }
+                        input.click()
+                      }}
+                    >
+                      <div className="space-y-2">
+                        <div className="mx-auto w-12 h-12 text-gray-400">
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          <span className="font-medium text-black">Clique para enviar</span> ou arraste arquivos
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          PDF, HEIC, JPEG, PNG (máx. 10MB)
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Lista de arquivos enviados */}
+                    <div className="space-y-1">
+                      {uploadedFiles[campo.id]?.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded text-xs">
+                          <div 
+                            className="flex items-center space-x-2 cursor-pointer hover:text-blue-600"
+                            onClick={() => openFile(campo.id, (file as any).nome_arquivo || file.name)}
+                          >
+                            <div className="w-4 h-4 text-gray-500">
+                              {file.type === 'application/pdf' ? (
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              ) : (
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              )}
+                            </div>
+                            <span className="truncate max-w-[120px]" title={(file as any).nome_original || file.name}>
+                              {(file as any).nome_original || file.name}
+                            </span>
+                            <span className="text-gray-400">
+                              {file.size > 0 ? `(${(file.size / 1024 / 1024).toFixed(1)}MB)` : ''}
+                            </span>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removeFile(campo.id, index)
+                            }}
+                            className="text-red-500 hover:text-red-700 p-1"
+                            title="Remover arquivo"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )
