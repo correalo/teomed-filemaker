@@ -2,11 +2,13 @@
 
 ## Visão Geral
 
-Esta documentação descreve a implementação do armazenamento de arquivos como binários de 64 bits (Base64) no módulo de avaliações do sistema TEOMED. Esta abordagem permite armazenar arquivos diretamente no banco de dados MongoDB como strings Base64, eliminando a necessidade de armazenamento em sistema de arquivos.
+Esta documentação descreve a implementação do armazenamento de arquivos como binários de 64 bits (Base64) nos módulos de avaliações e exames pré-operatórios do sistema TEOMED. Esta abordagem permite armazenar arquivos diretamente no banco de dados MongoDB como strings Base64, eliminando a necessidade de armazenamento em sistema de arquivos.
 
 ## Alterações Realizadas
 
 ### 1. Schema (Modelo de Dados)
+
+#### Módulo de Avaliações
 
 O schema `Avaliacao` foi modificado para armazenar arquivos como strings Base64 em vez de Buffer:
 
@@ -21,7 +23,49 @@ O schema `Avaliacao` foi modificado para armazenar arquivos como strings Base64 
 }])
 ```
 
+#### Módulo de Exames Pré-operatórios
+
+O novo schema `ExamePreop` foi implementado para armazenar arquivos como strings Base64:
+
+```typescript
+@Schema({ collection: 'exames_preop' })
+export class ExamePreop {
+  @Prop({ required: true })
+  paciente_id: string;
+
+  @Prop()
+  nome_paciente: string;
+
+  @Prop({ type: Date, default: Date.now })
+  data_cadastro: Date;
+
+  @Prop({
+    type: {
+      tem_arquivo: Boolean,
+      nome_arquivo: String,
+      data_upload: Date,
+      observacoes: String,
+      arquivo_binario: String, // Armazenar arquivo como binário de 64 bits (Base64)
+      mime_type: String
+    }
+  })
+  exames: {
+    tem_arquivo: boolean;
+    nome_arquivo: string;
+    data_upload: Date;
+    observacoes: string;
+    arquivo_binario: string; // Base64
+    mime_type: string;
+  };
+
+  // Campos similares para usg, eda, rx, ecg, eco, polissonografia, outros
+  // ...
+}
+```
+
 ### 2. Controller (Controlador)
+
+#### Módulo de Avaliações
 
 O controller `AvaliacoesController` foi atualizado para:
 
@@ -43,7 +87,57 @@ O controller `AvaliacoesController` foi atualizado para:
   return res.send(fileBuffer);
   ```
 
+#### Módulo de Exames Pré-operatórios
+
+O controller `ExamesPreopController` foi implementado para:
+
+- Converter o buffer do arquivo para Base64 antes de salvar no banco de dados:
+  ```typescript
+  @Post('upload/:pacienteId/:fieldName')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadFile(
+    @UploadedFile() file: any,
+    @Param('pacienteId') pacienteId: string,
+    @Param('fieldName') fieldName: string,
+    @Body('observacoes') observacoes?: string
+  ) {
+    // Converter o arquivo para Base64
+    const arquivo_binario = file.buffer.toString('base64');
+    
+    return this.examesPreopService.uploadFile(pacienteId, fieldName, {
+      nome_arquivo: file.originalname,
+      arquivo_binario,
+      mime_type: file.mimetype,
+      observacoes
+    });
+  }
+  ```
+
+- Converter de Base64 para Buffer ao servir o arquivo:
+  ```typescript
+  @Get('file/:pacienteId/:fieldName')
+  async getFile(
+    @Param('pacienteId') pacienteId: string,
+    @Param('fieldName') fieldName: string,
+    @Res() res: Response
+  ) {
+    const file = await this.examesPreopService.getFile(pacienteId, fieldName);
+    
+    // Converter Base64 para Buffer
+    const fileBuffer = Buffer.from(file.arquivo_binario, 'base64');
+    
+    // Configurar cabeçalhos da resposta
+    res.setHeader('Content-Type', file.mime_type);
+    res.setHeader('Content-Disposition', `inline; filename="${file.nome_arquivo}"`);
+    
+    // Enviar o arquivo
+    res.send(fileBuffer);
+  }
+  ```
+
 ### 3. Service (Serviço)
+
+#### Módulo de Avaliações
 
 O serviço `AvaliacoesService` foi atualizado para trabalhar com dados em formato Base64:
 
