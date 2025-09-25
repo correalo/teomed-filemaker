@@ -112,6 +112,7 @@ export class Exame {
     data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
+  // Renomeado para ELETROCARDIOGRAMA na interface
   tomografia: Array<{
     nome_original: string;
     nome_arquivo: string;
@@ -147,6 +148,7 @@ export class Exame {
     data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
+  // Renomeado para OUTROS EXAMES PRÉ-OP na interface
   outros: Array<{
     nome_original: string;
     nome_arquivo: string;
@@ -164,6 +166,7 @@ export class Exame {
     data: String, // Armazenar arquivo como binário de 64 bits (Base64)
     data_upload: { type: Date, default: Date.now }
   }])
+  // Não mais usado na interface - mantido para compatibilidade com dados existentes
   outros2: Array<{
     nome_original: string;
     nome_arquivo: string;

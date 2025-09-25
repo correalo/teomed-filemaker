@@ -56,7 +56,7 @@ export class ExamesService {
       };
       
       return this.exameModel.findByIdAndUpdate(
-        exame._id,
+        (exame as any)._id,
         { $set: updateData },
         { new: true }
       ).exec();
@@ -93,7 +93,7 @@ export class ExamesService {
     updatedFiles.splice(fileIndex, 1);
     
     return this.exameModel.findByIdAndUpdate(
-      exame._id,
+      (exame as any)._id,
       { 
         $set: { 
           [fieldName]: updatedFiles,

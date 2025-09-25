@@ -24,10 +24,9 @@ interface ExameData {
   eda?: FileInfo[];
   colono?: FileInfo[]; // Ecocardiograma
   anatomia_patologica?: FileInfo[]; // RX de Tórax
-  tomografia?: FileInfo[];
+  tomografia?: FileInfo[]; // Eletrocardiograma
   bioimpedancia?: FileInfo[]; // Polissonografia
-  outros?: FileInfo[];
-  outros2?: FileInfo[];
+  outros?: FileInfo[]; // Outros Exames Pré-Op
 }
 
 export function useExame(pacienteId: string) {

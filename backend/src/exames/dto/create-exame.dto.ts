@@ -43,6 +43,7 @@ export class CreateExameDto {
     data: string;
     data_upload?: Date;
   }>;
+  // Renomeado para ELETROCARDIOGRAMA na interface
   tomografia?: Array<{
     nome_original: string;
     nome_arquivo: string;
@@ -60,6 +61,7 @@ export class CreateExameDto {
     data: string;
     data_upload?: Date;
   }>;
+  // Renomeado para OUTROS EXAMES PRÉ-OP na interface
   outros?: Array<{
     nome_original: string;
     nome_arquivo: string;
@@ -68,6 +70,7 @@ export class CreateExameDto {
     data: string;
     data_upload?: Date;
   }>;
+  // Não mais usado na interface - mantido para compatibilidade com dados existentes
   outros2?: Array<{
     nome_original: string;
     nome_arquivo: string;
