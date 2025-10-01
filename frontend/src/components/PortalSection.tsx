@@ -118,8 +118,8 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
     if (exameData) {
       const filesFromBackend: {[key: string]: File[]} = {}
       
-      // Converter dados do backend para formato de File (mock)
-      const categories = ['laboratoriais', 'usg', 'eda', 'colono', 'anatomia_patologica', 'tomografia', 'bioimpedancia', 'outros', 'outros2'] // colono=ecocardiograma, anatomia_patologica=rx_de_torax, bioimpedancia=polissonografia
+      // Converter dados do backend para formato de File (mock) - campos de exames pré-op
+      const categories = ['exames', 'usg', 'eda', 'rx', 'ecg', 'eco', 'polissonografia', 'outros']
       categories.forEach(category => {
         if (exameData[category] && exameData[category].length > 0) {
           filesFromBackend[category] = exameData[category].map((fileData: any) => {
@@ -250,7 +250,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
         const token = localStorage.getItem('token')
         
         // Determinar a API correta com base no activeTab
-        const apiPath = activeTab === 'exames' ? 'exames' : 'avaliacoes'
+        const apiPath = activeTab === 'exames' ? 'exames-preop' : 'avaliacoes'
         
         const response = await fetch(`/api/${apiPath}/upload/${pacienteId}/${fieldId}`, {
           method: 'POST',
@@ -357,7 +357,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
       const token = localStorage.getItem('token')
       
       // Determinar a API correta com base no activeTab
-      const apiPath = activeTab === 'exames' ? 'exames' : 'avaliacoes'
+      const apiPath = activeTab === 'exames' ? 'exames-preop' : 'avaliacoes'
       
       const response = await fetch(`/api/${apiPath}/file/${pacienteId}/${fieldId}/${file.name}`, {
         method: 'DELETE',
@@ -994,7 +994,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                             onClick={() => openFile(campo.id, (file as any).nome_arquivo || file.name)}
                           >
                             <div className="w-4 h-4 text-gray-500">
-                              {file.type === 'application/pdf' ? (
+                              {((file as any).tipo || file.type || '').includes('pdf') ? (
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
@@ -1057,15 +1057,14 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
             <div className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[
-                  { id: 'laboratoriais', label: 'EXAMES LABORATORIAIS' },
+                  { id: 'exames', label: 'EXAMES LABORATORIAIS' },
                   { id: 'usg', label: 'USG' },
                   { id: 'eda', label: 'EDA' },
-                  { id: 'colono', label: 'ECOCARDIOGRAMA' },
-                  { id: 'anatomia_patologica', label: 'RX DE TÓRAX' },
-                  { id: 'tomografia', label: 'TOMOGRAFIA' },
-                  { id: 'bioimpedancia', label: 'POLISSONOGRAFIA' },
-                  { id: 'outros', label: 'OUTROS' },
-                  { id: 'outros2', label: 'OUTROS 2' }
+                  { id: 'rx', label: 'RX DE TÓRAX' },
+                  { id: 'ecg', label: 'ECG' },
+                  { id: 'eco', label: 'ECOCARDIOGRAMA' },
+                  { id: 'polissonografia', label: 'POLISSONOGRAFIA' },
+                  { id: 'outros', label: 'OUTROS' }
                 ].map((campo) => (
                   <div key={campo.id} className="space-y-2">
                     <label className="block text-xs font-medium text-filemaker-text">
@@ -1123,7 +1122,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                             onClick={() => openFile(campo.id, (file as any).nome_arquivo || file.name)}
                           >
                             <div className="w-4 h-4 text-gray-500">
-                              {file.type === 'application/pdf' ? (
+                              {((file as any).tipo || file.type || '').includes('pdf') ? (
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
