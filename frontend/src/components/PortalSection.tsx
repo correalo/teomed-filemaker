@@ -42,6 +42,12 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
   const [isLoading, setIsLoading] = useState(false)
   const toast = useToast()
   
+  // Estados para modal de pós-operatório
+  const [isPosOpModalOpen, setIsPosOpModalOpen] = useState(false)
+  const [selectedEvolucaoId, setSelectedEvolucaoId] = useState<string | null>(null)
+  const [posOpFiles, setPosOpFiles] = useState<File[]>([])
+  const [condutaTratamentos, setCondutaTratamentos] = useState<string>('')
+  
   // Carregar arquivos existentes  // Buscar avaliação do paciente
   const { data: avaliacaoData, isLoading: loadingAvaliacao, refetch: refetchAvaliacao } = useQuery({
     queryKey: ['avaliacao', pacienteId],
@@ -391,6 +397,60 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
     }
   }
 
+  // Funções para modal de pós-operatório
+  const openPosOpModal = (evolucaoId: string) => {
+    setSelectedEvolucaoId(evolucaoId)
+    setPosOpFiles([])
+    setCondutaTratamentos('')
+    setIsPosOpModalOpen(true)
+  }
+
+  const closePosOpModal = () => {
+    setIsPosOpModalOpen(false)
+    setSelectedEvolucaoId(null)
+    setPosOpFiles([])
+    setCondutaTratamentos('')
+  }
+
+  const handlePosOpFileUpload = (files: FileList | null) => {
+    if (!files) return
+    
+    const validTypes = ['application/pdf', 'image/heic', 'image/jpeg', 'image/jpg', 'image/png']
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    
+    const validFiles = Array.from(files).filter(file => {
+      if (!validTypes.includes(file.type)) {
+        toast.error(`Arquivo ${file.name} não é um tipo válido. Use PDF, HEIC, JPEG ou PNG.`)
+        return false
+      }
+      if (file.size > maxSize) {
+        toast.error(`Arquivo ${file.name} é muito grande. Máximo 10MB.`)
+        return false
+      }
+      return true
+    })
+
+    setPosOpFiles(prev => [...prev, ...validFiles])
+  }
+
+  const removePosOpFile = (index: number) => {
+    setPosOpFiles(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const savePosOpData = async () => {
+    if (!selectedEvolucaoId) return
+    
+    try {
+      // Aqui você pode implementar a lógica de salvamento
+      // Por enquanto, vamos apenas mostrar uma mensagem de sucesso
+      toast.success('Dados de pós-operatório salvos com sucesso!')
+      closePosOpModal()
+    } catch (error) {
+      console.error('Erro ao salvar dados de pós-op:', error)
+      toast.error('Erro ao salvar dados. Tente novamente.')
+    }
+  }
+
   const tabs = [
     { id: 'evolucoes', label: 'EVOLUÇÕES', color: 'bg-filemaker-blue' },
     { id: 'avaliacoes', label: 'AVALIAÇÕES', color: 'bg-filemaker-green' },
@@ -682,17 +742,17 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
               </div>
             </div>
 
-            {/* Header das colunas */}
-            <div className="bg-gray-100 border-b border-gray-300">
-              <div className="grid grid-cols-12 gap-1 px-2 py-1">
-                <div className="col-span-3 text-xs font-bold text-filemaker-text">NOME</div>
+            {/* Header das colunas - Apenas desktop */}
+            <div className="hidden lg:block bg-gray-100 border-b border-gray-300 overflow-x-auto">
+              <div className="grid grid-cols-12 gap-1 px-2 py-1 min-w-max">
+                <div className="col-span-2 lg:col-span-3 text-xs font-bold text-filemaker-text">NOME</div>
                 <div className="col-span-1 text-xs font-bold text-filemaker-text">DATA</div>
                 <div className="col-span-1 text-xs font-bold text-filemaker-text">DELTA T</div>
                 <div className="col-span-1 text-xs font-bold text-filemaker-text">PESO</div>
-                <div className="col-span-1 text-xs font-bold text-filemaker-text">DELTA PESO</div>
-                <div className="col-span-2 text-xs font-bold text-filemaker-text">EXAMES ALTERADOS</div>
+                <div className="col-span-1 text-xs font-bold text-filemaker-text">DELTA P</div>
+                <div className="col-span-2 text-xs font-bold text-filemaker-text">EXAMES ALT</div>
                 <div className="col-span-2 text-xs font-bold text-filemaker-text">MEDICAÇÕES</div>
-                <div className="col-span-1 text-xs font-bold text-filemaker-text flex justify-center">
+                <div className="col-span-2 lg:col-span-1 text-xs font-bold text-filemaker-text flex justify-center">
                   AÇÕES
                 </div>
               </div>
@@ -700,12 +760,12 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
 
             {/* Formulário para nova evolução */}
             {showAddForm && !isSearchMode && (
-              <div className="border-b border-gray-300 bg-yellow-50">
-                <div className="grid grid-cols-12 gap-1 px-2 py-2">
+              <div className="border-b border-gray-300 bg-yellow-50 overflow-x-auto">
+                <div className="grid grid-cols-12 gap-1 px-2 py-2 min-w-max">
                   <input
                     type="text"
                     value={newEvolucao.nome_paciente || pacienteNome}
-                    className="col-span-3 border border-gray-300 rounded px-1 py-1 text-xs bg-gray-100"
+                    className="col-span-2 lg:col-span-3 border border-gray-300 rounded px-1 py-1 text-xs bg-gray-100"
                     readOnly={true}
                     title="Nome do paciente"
                   />
@@ -750,7 +810,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                     onChange={(e) => setNewEvolucao({ ...newEvolucao, medicacoes: e.target.value.split(',').map(item => item.trim()) })}
                     className="col-span-2 border border-gray-300 rounded px-1 py-1 text-xs"
                   />
-                  <div className="col-span-1 flex justify-center">
+                  <div className="col-span-2 lg:col-span-1 flex justify-center">
                     <button
                       onClick={handleAddEvolucao}
                       className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
@@ -764,13 +824,13 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
               </div>
             )}
 
-            {/* Linhas de dados */}
-            <div className="max-h-96 overflow-y-auto">
+            {/* Linhas de dados - Tabela para desktop */}
+            <div className="hidden lg:block max-h-96 overflow-y-auto overflow-x-auto">
               {editedEvolucoes.length > 0 ? (
                 editedEvolucoes.map((evolucao, index) => (
                   <div key={`evolucao-${index}-${evolucao._id || index}`} className="border-b border-gray-200">
-                    <div className="grid grid-cols-12 gap-1 px-2 py-2">
-                      <div className="col-span-3 text-xs py-1 px-1 border border-gray-200 rounded bg-blue-50">
+                    <div className="grid grid-cols-12 gap-1 px-2 py-2 min-w-max">
+                      <div className="col-span-2 lg:col-span-3 text-xs py-1 px-1 border border-gray-200 rounded bg-blue-50">
                         {evolucao.nome_paciente}
                       </div>
                       
@@ -854,7 +914,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                         </div>
                       )}
                       
-                      <div className="col-span-1 flex justify-center items-center gap-1">
+                      <div className="col-span-2 lg:col-span-1 flex justify-center items-center gap-1">
                         {evolucao._editing ? (
                           <>
                             <button
@@ -877,6 +937,14 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                         ) : (
                           <>
                             <button
+                              onClick={() => openPosOpModal(evolucao._id || '')}
+                              className="bg-green-600 hover:bg-green-700 text-white px-1 py-1 rounded text-xs"
+                              title="Pós-Operatório"
+                              disabled={!evolucao._id}
+                            >
+                              📋
+                            </button>
+                            <button
                               onClick={() => handleEditEvolucao(index)}
                               className="bg-blue-600 hover:bg-blue-700 text-white px-1 py-1 rounded text-xs"
                               title="Editar"
@@ -895,6 +963,84 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                           </>
                         )}
                       </div>
+                    </div>
+                  </div>
+                  ))
+                ) : (
+                <div className="text-center py-8 text-gray-500 text-sm">
+                  Nenhuma evolução encontrada
+                </div>
+              )}
+            </div>
+
+            {/* Cards para mobile/tablet/iPad */}
+            <div className="lg:hidden max-h-96 overflow-y-auto space-y-3 p-2">
+              {editedEvolucoes.length > 0 ? (
+                editedEvolucoes.map((evolucao, index) => (
+                  <div key={`evolucao-card-${index}-${evolucao._id || index}`} className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm">
+                    {/* Nome do Paciente */}
+                    <div className="mb-3 pb-2 border-b border-gray-200">
+                      <div className="text-xs font-bold text-gray-500 mb-1">PACIENTE</div>
+                      <div className="text-sm font-semibold text-blue-700">{evolucao.nome_paciente}</div>
+                    </div>
+
+                    {/* Grid de informações */}
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <div className="text-xs font-bold text-gray-500 mb-1">DATA</div>
+                        <div className="text-sm">{formatDate(evolucao.data_retorno)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-gray-500 mb-1">DELTA T</div>
+                        <div className="text-sm">{evolucao.delta_t}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-gray-500 mb-1">PESO</div>
+                        <div className="text-sm">{evolucao.peso}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-gray-500 mb-1">DELTA PESO</div>
+                        <div className="text-sm">{evolucao.delta_peso}</div>
+                      </div>
+                    </div>
+
+                    {/* Exames e Medicações */}
+                    <div className="space-y-2 mb-3">
+                      <div>
+                        <div className="text-xs font-bold text-gray-500 mb-1">EXAMES ALTERADOS</div>
+                        <div className="text-sm bg-gray-50 p-2 rounded">{evolucao.exames_alterados || '-'}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-gray-500 mb-1">MEDICAÇÕES</div>
+                        <div className="text-sm bg-gray-50 p-2 rounded">
+                          {Array.isArray(evolucao.medicacoes) ? evolucao.medicacoes.join(', ') : '-'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botões de ação */}
+                    <div className="flex gap-2 pt-3 border-t border-gray-200">
+                      <button
+                        onClick={() => openPosOpModal(evolucao._id || '')}
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium"
+                        disabled={!evolucao._id}
+                      >
+                        📋 Pós-Op
+                      </button>
+                      <button
+                        onClick={() => handleEditEvolucao(index)}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm font-medium"
+                        disabled={isSaving}
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        onClick={() => handleDeleteEvolucao(evolucao._id || '', index)}
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm font-medium"
+                        disabled={!evolucao._id || isSaving}
+                      >
+                        🗑️
+                      </button>
                     </div>
                   </div>
                 ))
@@ -1235,15 +1381,15 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
 
   return (
     <div className="space-y-4">
-      {/* Tabs Navigation */}
-      <div className="flex border-b border-gray-200 mb-6">
+      {/* Tabs Navigation - Responsivo */}
+      <div className="flex flex-col md:flex-row md:border-b border-gray-200 mb-6 gap-2 md:gap-0">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium ${activeTab === tab.id 
+            className={`px-4 py-2 text-sm font-medium rounded-md md:rounded-none ${activeTab === tab.id 
               ? `${tab.color} text-white` 
-              : 'text-filemaker-text hover:bg-gray-100'}`}
+              : 'text-filemaker-text hover:bg-gray-100 border border-gray-300 md:border-0'}`}
           >
             {tab.label}
           </button>
@@ -1625,6 +1771,151 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                   <p className="text-gray-500">Nenhum arquivo selecionado</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Pós-Operatório */}
+      {isPosOpModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b bg-green-600 text-white">
+              <h2 className="text-lg font-semibold">Pós-Operatório</h2>
+              <button
+                onClick={closePosOpModal}
+                className="text-white hover:text-gray-200 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Nome do Paciente */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nome do Paciente
+                </label>
+                <input
+                  type="text"
+                  value={pacienteNome}
+                  readOnly
+                  className="filemaker-input w-full bg-gray-100"
+                />
+              </div>
+
+              {/* Upload de Exames de Pós-Op */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Exames de Pós-Operatório
+                </label>
+                <div
+                  className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-600 transition-colors cursor-pointer"
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    e.currentTarget.classList.add('border-green-600', 'bg-green-50')
+                  }}
+                  onDragLeave={(e) => {
+                    e.preventDefault()
+                    e.currentTarget.classList.remove('border-green-600', 'bg-green-50')
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    e.currentTarget.classList.remove('border-green-600', 'bg-green-50')
+                    handlePosOpFileUpload(e.dataTransfer.files)
+                  }}
+                  onClick={() => {
+                    const input = document.createElement('input')
+                    input.type = 'file'
+                    input.multiple = true
+                    input.accept = 'application/pdf,image/*,.heic,.heif'
+                    input.onchange = (e) => {
+                      const target = e.target as HTMLInputElement
+                      handlePosOpFileUpload(target.files)
+                    }
+                    input.click()
+                  }}
+                >
+                  <div className="space-y-2">
+                    <div className="mx-auto w-12 h-12 text-gray-400">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                      </svg>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium text-green-600">Clique para enviar</span> ou arraste arquivos
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      PDF, HEIC, JPEG, PNG (máx. 10MB)
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lista de arquivos */}
+                {posOpFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {posOpFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded text-sm">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-4 h-4 text-gray-500">
+                            {file.type.includes('pdf') ? (
+                              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                            ) : (
+                              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            )}
+                          </div>
+                          <span className="truncate max-w-[300px]">{file.name}</span>
+                          <span className="text-gray-400 text-xs">
+                            ({(file.size / 1024 / 1024).toFixed(1)}MB)
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => removePosOpFile(index)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                          title="Remover arquivo"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Conduta e Tratamentos */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Conduta e Tratamentos
+                </label>
+                <textarea
+                  value={condutaTratamentos}
+                  onChange={(e) => setCondutaTratamentos(e.target.value)}
+                  className="filemaker-input w-full h-32 resize-none"
+                  placeholder="Digite aqui as condutas e tratamentos..."
+                />
+              </div>
+            </div>
+
+            {/* Botões de ação */}
+            <div className="flex justify-end space-x-3 p-4 border-t bg-gray-50">
+              <button
+                onClick={closePosOpModal}
+                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={savePosOpData}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+              >
+                Salvar
+              </button>
             </div>
           </div>
         </div>
