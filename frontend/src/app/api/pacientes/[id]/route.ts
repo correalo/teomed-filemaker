@@ -40,6 +40,48 @@ export async function GET(
   }
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = params.id;
+    const body = await request.json();
+    const authHeader = request.headers.get('authorization');
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID do paciente é obrigatório' }, { status: 400 });
+    }
+
+    // Encaminhar PATCH para o backend NestJS
+    const response = await fetch(`http://localhost:3004/pacientes/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authHeader ? { 'Authorization': authHeader } : {})
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      return NextResponse.json(
+        { error: text || 'Erro ao atualizar paciente (PATCH)' },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Erro ao atualizar paciente (PATCH):', error);
+    return NextResponse.json(
+      { error: 'Erro interno no servidor' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }

@@ -14,157 +14,144 @@ export class ExamePreop {
   @Prop({ type: Date, default: Date.now })
   data_cadastro: Date;
 
-  @Prop({
-    type: {
-      tem_arquivo: Boolean,
-      nome_arquivo: String,
-      data_upload: Date,
-      observacoes: String,
-      arquivo_binario: String, // Armazenar arquivo como binário de 64 bits (Base64)
-      mime_type: String
-    }
-  })
-  exames: {
-    tem_arquivo: boolean;
-    nome_arquivo: string;
-    data_upload: Date;
-    observacoes: string;
-    arquivo_binario: string; // Base64
-    mime_type: string;
-  };
+  @Prop({ type: Date, default: Date.now })
+  data_atualizacao: Date;
 
-  @Prop({
-    type: {
-      tem_arquivo: Boolean,
-      nome_arquivo: String,
-      data_upload: Date,
-      observacoes: String,
-      arquivo_binario: String, // Armazenar arquivo como binário de 64 bits (Base64)
-      mime_type: String
-    }
-  })
-  usg: {
-    tem_arquivo: boolean;
+  @Prop([{
+    nome_original: String,
+    nome_arquivo: String,
+    tipo: String,
+    tamanho: Number,
+    data: String,
+    data_upload: { type: Date, default: Date.now }
+  }])
+  exames: Array<{
+    nome_original: string;
     nome_arquivo: string;
+    tipo: string;
+    tamanho: number;
+    data: string;
     data_upload: Date;
-    observacoes: string;
-    arquivo_binario: string; // Base64
-    mime_type: string;
-  };
+  }>;
 
-  @Prop({
-    type: {
-      tem_arquivo: Boolean,
-      nome_arquivo: String,
-      data_upload: Date,
-      observacoes: String,
-      arquivo_binario: String, // Armazenar arquivo como binário de 64 bits (Base64)
-      mime_type: String
-    }
-  })
-  eda: {
-    tem_arquivo: boolean;
+  @Prop([{
+    nome_original: String,
+    nome_arquivo: String,
+    tipo: String,
+    tamanho: Number,
+    data: String,
+    data_upload: { type: Date, default: Date.now }
+  }])
+  usg: Array<{
+    nome_original: string;
     nome_arquivo: string;
+    tipo: string;
+    tamanho: number;
+    data: string;
     data_upload: Date;
-    observacoes: string;
-    arquivo_binario: string; // Base64
-    mime_type: string;
-  };
+  }>;
 
-  @Prop({
-    type: {
-      tem_arquivo: Boolean,
-      nome_arquivo: String,
-      data_upload: Date,
-      observacoes: String,
-      arquivo_binario: String, // Armazenar arquivo como binário de 64 bits (Base64)
-      mime_type: String
-    }
-  })
-  rx: {
-    tem_arquivo: boolean;
+  @Prop([{
+    nome_original: String,
+    nome_arquivo: String,
+    tipo: String,
+    tamanho: Number,
+    data: String,
+    data_upload: { type: Date, default: Date.now }
+  }])
+  eda: Array<{
+    nome_original: string;
     nome_arquivo: string;
+    tipo: string;
+    tamanho: number;
+    data: string;
     data_upload: Date;
-    observacoes: string;
-    arquivo_binario: string; // Base64
-    mime_type: string;
-  };
+  }>;
 
-  @Prop({
-    type: {
-      tem_arquivo: Boolean,
-      nome_arquivo: String,
-      data_upload: Date,
-      observacoes: String,
-      arquivo_binario: String, // Armazenar arquivo como binário de 64 bits (Base64)
-      mime_type: String
-    }
-  })
-  ecg: {
-    tem_arquivo: boolean;
+  @Prop([{
+    nome_original: String,
+    nome_arquivo: String,
+    tipo: String,
+    tamanho: Number,
+    data: String,
+    data_upload: { type: Date, default: Date.now }
+  }])
+  rx: Array<{
+    nome_original: string;
     nome_arquivo: string;
+    tipo: string;
+    tamanho: number;
+    data: string;
     data_upload: Date;
-    observacoes: string;
-    arquivo_binario: string; // Base64
-    mime_type: string;
-  };
+  }>;
 
-  @Prop({
-    type: {
-      tem_arquivo: Boolean,
-      nome_arquivo: String,
-      data_upload: Date,
-      observacoes: String,
-      arquivo_binario: String, // Armazenar arquivo como binário de 64 bits (Base64)
-      mime_type: String
-    }
-  })
-  eco: {
-    tem_arquivo: boolean;
+  @Prop([{
+    nome_original: String,
+    nome_arquivo: String,
+    tipo: String,
+    tamanho: Number,
+    data: String,
+    data_upload: { type: Date, default: Date.now }
+  }])
+  ecg: Array<{
+    nome_original: string;
     nome_arquivo: string;
+    tipo: string;
+    tamanho: number;
+    data: string;
     data_upload: Date;
-    observacoes: string;
-    arquivo_binario: string; // Base64
-    mime_type: string;
-  };
+  }>;
 
-  @Prop({
-    type: {
-      tem_arquivo: Boolean,
-      nome_arquivo: String,
-      data_upload: Date,
-      observacoes: String,
-      arquivo_binario: String, // Armazenar arquivo como binário de 64 bits (Base64)
-      mime_type: String
-    }
-  })
-  polissonografia: {
-    tem_arquivo: boolean;
+  @Prop([{
+    nome_original: String,
+    nome_arquivo: String,
+    tipo: String,
+    tamanho: Number,
+    data: String,
+    data_upload: { type: Date, default: Date.now }
+  }])
+  eco: Array<{
+    nome_original: string;
     nome_arquivo: string;
+    tipo: string;
+    tamanho: number;
+    data: string;
     data_upload: Date;
-    observacoes: string;
-    arquivo_binario: string; // Base64
-    mime_type: string;
-  };
+  }>;
 
-  @Prop({
-    type: {
-      tem_arquivo: Boolean,
-      nome_arquivo: String,
-      data_upload: Date,
-      observacoes: String,
-      arquivo_binario: String, // Armazenar arquivo como binário de 64 bits (Base64)
-      mime_type: String
-    }
-  })
-  outros: {
-    tem_arquivo: boolean;
+  @Prop([{
+    nome_original: String,
+    nome_arquivo: String,
+    tipo: String,
+    tamanho: Number,
+    data: String,
+    data_upload: { type: Date, default: Date.now }
+  }])
+  polissonografia: Array<{
+    nome_original: string;
     nome_arquivo: string;
+    tipo: string;
+    tamanho: number;
+    data: string;
     data_upload: Date;
-    observacoes: string;
-    arquivo_binario: string; // Base64
-    mime_type: string;
-  };
+  }>;
+
+  @Prop([{
+    nome_original: String,
+    nome_arquivo: String,
+    tipo: String,
+    tamanho: Number,
+    data: String,
+    data_upload: { type: Date, default: Date.now }
+  }])
+  outros: Array<{
+    nome_original: string;
+    nome_arquivo: string;
+    tipo: string;
+    tamanho: number;
+    data: string;
+    data_upload: Date;
+  }>;
 
   @Prop({ type: Date })
   data_cirurgia_prevista: Date;

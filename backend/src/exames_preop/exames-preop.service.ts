@@ -4,11 +4,13 @@ import { Model } from 'mongoose';
 import { CreateExamePreopDto } from './dto/create-exame-preop.dto';
 import { UpdateExamePreopDto } from './dto/update-exame-preop.dto';
 import { ExamePreop, ExamePreopDocument } from './exame-preop.entity';
+import { Paciente, PacienteDocument } from '../schemas/paciente.schema';
 
 @Injectable()
 export class ExamesPreopService {
   constructor(
-    @InjectModel(ExamePreop.name) private examePreopModel: Model<ExamePreopDocument>
+    @InjectModel(ExamePreop.name) private examePreopModel: Model<ExamePreopDocument>,
+    @InjectModel(Paciente.name) private pacienteModel: Model<PacienteDocument>
   ) {}
 
   async create(createExamePreopDto: CreateExamePreopDto): Promise<ExamePreop> {
@@ -129,30 +131,46 @@ export class ExamesPreopService {
       let examePreop = await this.findByPacienteId(pacienteId);
       
       if (!examePreop) {
-        // Criar novo exame para o paciente
+        // Buscar dados do paciente para obter o nome
+        const paciente = await this.pacienteModel.findById(pacienteId).exec();
+        if (!paciente) {
+          throw new NotFoundException(`Paciente com ID ${pacienteId} não encontrado`);
+        }
+        
+        // Criar novo exame para o paciente com nome_paciente
         const newExamePreop = new this.examePreopModel({
           paciente_id: pacienteId,
-          data_cadastro: new Date()
+          nome_paciente: paciente.nome,
+          data_cadastro: new Date(),
+          data_atualizacao: new Date()
         });
         examePreop = await newExamePreop.save();
       }
 
-      // Atualizar o campo específico com o arquivo binário
-      const updateData = {
-        [`${fieldName}.tem_arquivo`]: true,
-        [`${fieldName}.nome_arquivo`]: fileData.nome_arquivo,
-        [`${fieldName}.data_upload`]: new Date(),
-        [`${fieldName}.arquivo_binario`]: fileData.arquivo_binario,
-        [`${fieldName}.mime_type`]: fileData.mime_type
+      // Gerar nome único para o arquivo
+      const timestamp = Date.now();
+      const nomeArquivoUnico = `${fieldName}_${timestamp}_${fileData.nome_arquivo}`;
+
+      // Calcular tamanho do arquivo (Base64 para bytes)
+      const tamanhoBytes = Math.floor((fileData.arquivo_binario.length * 3) / 4);
+
+      // Criar objeto do arquivo para adicionar ao array
+      const novoArquivo = {
+        nome_original: fileData.nome_arquivo,
+        nome_arquivo: nomeArquivoUnico,
+        tipo: fileData.mime_type,
+        tamanho: tamanhoBytes,
+        data: fileData.arquivo_binario,
+        data_upload: new Date()
       };
 
-      if (fileData.observacoes) {
-        updateData[`${fieldName}.observacoes`] = fileData.observacoes;
-      }
-
+      // Adicionar arquivo ao array usando $push
       return await this.examePreopModel.findByIdAndUpdate(
         examePreop._id,
-        { $set: updateData },
+        { 
+          $push: { [fieldName]: novoArquivo },
+          $set: { data_atualizacao: new Date() }
+        },
         { new: true }
       ).exec();
     } catch (error) {
@@ -163,7 +181,7 @@ export class ExamesPreopService {
     }
   }
 
-  async removeFile(pacienteId: string, fieldName: string) {
+  async removeFile(pacienteId: string, fieldName: string, nomeArquivo: string) {
     try {
       // Validar campo
       const validFields = ['exames', 'usg', 'eda', 'rx', 'ecg', 'eco', 'polissonografia', 'outros'];
@@ -178,23 +196,19 @@ export class ExamesPreopService {
         throw new NotFoundException(`Exame não encontrado para o paciente: ${pacienteId}`);
       }
       
-      // Verificar se o campo tem arquivo
+      // Verificar se o campo tem arquivos
       const field = examePreop[fieldName];
-      if (!field || !field.tem_arquivo) {
-        throw new NotFoundException(`Não há arquivo para remover no campo: ${fieldName}`);
+      if (!field || !Array.isArray(field) || field.length === 0) {
+        throw new NotFoundException(`Não há arquivos no campo: ${fieldName}`);
       }
 
-      // Limpar o campo específico
-      const updateData = {
-        [`${fieldName}.tem_arquivo`]: false,
-        [`${fieldName}.nome_arquivo`]: '',
-        [`${fieldName}.arquivo_binario`]: null,
-        [`${fieldName}.mime_type`]: ''
-      };
-
+      // Remover arquivo específico do array usando $pull
       return await this.examePreopModel.findByIdAndUpdate(
         examePreop._id,
-        { $set: updateData },
+        { 
+          $pull: { [fieldName]: { nome_arquivo: nomeArquivo } },
+          $set: { data_atualizacao: new Date() }
+        },
         { new: true }
       ).exec();
     } catch (error) {
@@ -205,7 +219,7 @@ export class ExamesPreopService {
     }
   }
 
-  async getFile(pacienteId: string, fieldName: string) {
+  async getFile(pacienteId: string, fieldName: string, nomeArquivo: string) {
     try {
       // Validar campo
       const validFields = ['exames', 'usg', 'eda', 'rx', 'ecg', 'eco', 'polissonografia', 'outros'];
@@ -220,16 +234,24 @@ export class ExamesPreopService {
         throw new NotFoundException(`Exame não encontrado para o paciente: ${pacienteId}`);
       }
 
-      // Retornar o arquivo binário do campo específico
+      // Buscar arquivo específico no array
       const field = examePreop[fieldName];
-      if (!field || !field.tem_arquivo || !field.arquivo_binario) {
-        throw new NotFoundException(`Arquivo não encontrado para o campo: ${fieldName}`);
+      if (!field || !Array.isArray(field) || field.length === 0) {
+        throw new NotFoundException(`Não há arquivos no campo: ${fieldName}`);
+      }
+      
+      const arquivo = field.find(f => f.nome_arquivo === nomeArquivo);
+      if (!arquivo || !arquivo.data) {
+        throw new NotFoundException(`Arquivo ${nomeArquivo} não encontrado no campo: ${fieldName}`);
       }
 
       return {
-        nome_arquivo: field.nome_arquivo,
-        arquivo_binario: field.arquivo_binario,
-        mime_type: field.mime_type
+        nome_original: arquivo.nome_original,
+        nome_arquivo: arquivo.nome_arquivo,
+        tipo: arquivo.tipo,
+        tamanho: arquivo.tamanho,
+        data: arquivo.data,
+        data_upload: arquivo.data_upload
       };
     } catch (error) {
       if (error instanceof BadRequestException || error instanceof NotFoundException) {

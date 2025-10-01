@@ -103,7 +103,7 @@ export class ExamesPreopController {
   @UseInterceptors(FileInterceptor('file', {
     storage: memoryStorage(),
     limits: {
-      fileSize: 10 * 1024 * 1024, // 10MB
+      fileSize: 50 * 1024 * 1024, // 50MB
     },
   }))
   async uploadFile(
@@ -123,8 +123,8 @@ export class ExamesPreopController {
     });
   }
 
-  @Get('file/:pacienteId/:fieldName')
-  @ApiOperation({ summary: 'Buscar arquivo de um campo específico' })
+  @Get('file/:pacienteId/:fieldName/:nomeArquivo')
+  @ApiOperation({ summary: 'Buscar arquivo específico de um campo' })
   @ApiParam({
     name: 'pacienteId',
     description: 'ID do paciente',
@@ -132,23 +132,29 @@ export class ExamesPreopController {
   })
   @ApiParam({
     name: 'fieldName',
-    description: 'Nome do campo para download (exames, usg, eda, rx, ecg, eco, polissonografia, outros)',
+    description: 'Nome do campo (exames, usg, eda, rx, ecg, eco, polissonografia, outros)',
     example: 'exames'
+  })
+  @ApiParam({
+    name: 'nomeArquivo',
+    description: 'Nome do arquivo a ser baixado',
+    example: 'exames_1696089600000_resultado.pdf'
   })
   async getFile(
     @Param('pacienteId') pacienteId: string,
     @Param('fieldName') fieldName: string,
+    @Param('nomeArquivo') nomeArquivo: string,
     @Res() res: Response
   ) {
     try {
-      const file = await this.examesPreopService.getFile(pacienteId, fieldName);
+      const file = await this.examesPreopService.getFile(pacienteId, fieldName, nomeArquivo);
       
       // Converter Base64 para Buffer
-      const fileBuffer = Buffer.from(file.arquivo_binario, 'base64');
+      const fileBuffer = Buffer.from(file.data, 'base64');
       
       // Configurar cabeçalhos da resposta
-      res.setHeader('Content-Type', file.mime_type);
-      res.setHeader('Content-Disposition', `inline; filename="${file.nome_arquivo}"`);
+      res.setHeader('Content-Type', file.tipo);
+      res.setHeader('Content-Disposition', `inline; filename="${file.nome_original}"`);
       
       // Enviar o arquivo
       res.send(fileBuffer);
@@ -157,8 +163,8 @@ export class ExamesPreopController {
     }
   }
 
-  @Delete('file/:pacienteId/:fieldName')
-  @ApiOperation({ summary: 'Remover arquivo de um campo específico' })
+  @Delete('file/:pacienteId/:fieldName/:nomeArquivo')
+  @ApiOperation({ summary: 'Remover arquivo específico de um campo' })
   @ApiParam({
     name: 'pacienteId',
     description: 'ID do paciente',
@@ -166,13 +172,19 @@ export class ExamesPreopController {
   })
   @ApiParam({
     name: 'fieldName',
-    description: 'Nome do campo para remoção (exames, usg, eda, rx, ecg, eco, polissonografia, outros)',
+    description: 'Nome do campo (exames, usg, eda, rx, ecg, eco, polissonografia, outros)',
     example: 'exames'
+  })
+  @ApiParam({
+    name: 'nomeArquivo',
+    description: 'Nome do arquivo a ser removido',
+    example: 'exames_1696089600000_resultado.pdf'
   })
   async removeFile(
     @Param('pacienteId') pacienteId: string,
-    @Param('fieldName') fieldName: string
+    @Param('fieldName') fieldName: string,
+    @Param('nomeArquivo') nomeArquivo: string
   ) {
-    return this.examesPreopService.removeFile(pacienteId, fieldName);
+    return this.examesPreopService.removeFile(pacienteId, fieldName, nomeArquivo);
   }
 }

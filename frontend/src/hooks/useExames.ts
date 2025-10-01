@@ -48,7 +48,7 @@ export function useExame(pacienteId: string) {
         return;
       }
       
-      const response = await fetch(`/api/exames/paciente/${pacienteId}`, {
+      const response = await fetch(`/api/exames-preop/paciente/${pacienteId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -108,7 +108,7 @@ export function useExames() {
         return;
       }
       
-      const response = await fetch('/api/exames', {
+      const response = await fetch('/api/exames-preop', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

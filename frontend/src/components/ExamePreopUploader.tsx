@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { toast } from 'react-toastify';
 
 interface ExamePreopUploaderProps {
@@ -18,6 +18,7 @@ const ExamePreopUploader: React.FC<ExamePreopUploaderProps> = ({
   const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [observacoes, setObservacoes] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -26,6 +27,44 @@ const ExamePreopUploader: React.FC<ExamePreopUploaderProps> = ({
       setFileName(null);
     }
   };
+  
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    console.log('Drop event detected! Files:', e.dataTransfer.files);
+    const files = e.dataTransfer.files;
+    
+    if (files.length > 0) {
+      // Atualizar o input de arquivo com o arquivo arrastado
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(files[0]);
+      if (fileInputRef.current) {
+        fileInputRef.current.files = dataTransfer.files;
+        setFileName(files[0].name);
+        toast.info(`Arquivo ${files[0].name} selecionado.`);
+      }
+    }
+  }, []);
 
   const handleUpload = async () => {
     if (!fileInputRef.current?.files?.length) {
@@ -35,9 +74,9 @@ const ExamePreopUploader: React.FC<ExamePreopUploaderProps> = ({
 
     const file = fileInputRef.current.files[0];
     
-    // Validar tamanho do arquivo (máximo 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('O arquivo é muito grande. O tamanho máximo é 10MB.');
+    // Validar tamanho do arquivo (máximo 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('O arquivo é muito grande. O tamanho máximo é 50MB.');
       return;
     }
 
@@ -210,18 +249,56 @@ const ExamePreopUploader: React.FC<ExamePreopUploaderProps> = ({
       
       <div className="mb-3">
         <label className="block text-sm font-medium mb-1">Arquivo</label>
+        <div 
+          className={`border-2 border-dashed ${isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300'} rounded-lg p-4 text-center hover:border-blue-500 transition-colors cursor-pointer mb-2`}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <div className="space-y-2">
+            <div className="mx-auto w-12 h-12 text-gray-400">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            <div className="text-sm text-gray-600">
+              <span className="font-medium text-blue-600">Clique para enviar</span> ou arraste arquivos
+            </div>
+            <div className="text-xs text-gray-500">
+              PDF, HEIC, JPEG, PNG (máx. 50MB)
+            </div>
+          </div>
+        </div>
+        
         <input
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
-          className="block w-full text-sm text-gray-500
-            file:mr-4 file:py-2 file:px-4
-            file:rounded-md file:border-0
-            file:text-sm file:font-semibold
-            file:bg-blue-50 file:text-blue-700
-            hover:file:bg-blue-100"
+          className="hidden"
           disabled={isUploading}
         />
+        
+        {fileName && (
+          <div className="mt-2 p-2 bg-gray-50 border rounded flex items-center justify-between">
+            <span className="text-sm truncate">{fileName}</span>
+            <button 
+              onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = '';
+                  setFileName(null);
+                }
+              }}
+              className="ml-2 text-red-500 hover:text-red-700"
+              type="button"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
       
       <div className="mb-3">

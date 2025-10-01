@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import axios from 'axios'
+import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useQuery } from '@tanstack/react-query'
+import dynamic from 'next/dynamic'
 import { useToast } from './Toast'
 import { useAvaliacao } from '../hooks/useAvaliacao'
 import { useEvolucoes } from '../hooks/useEvolucoes'
@@ -13,6 +13,9 @@ import { useExame } from '../hooks/useExames'
 import { Evolucao, EvolucaoSearchFields } from '../types/evolucao'
 import { formatDate } from '../utils/formatters'
 
+// Importar PDFViewer dinamicamente para evitar SSR
+const PDFViewer = dynamic(() => import('./PDFViewer'), { ssr: false })
+
 interface PortalSectionProps {
   pacienteId: string
   pacienteNome?: string
@@ -20,18 +23,6 @@ interface PortalSectionProps {
   searchFields?: any
   onSearchFieldChange?: (field: string, value: string) => void
 }
-
-const api = axios.create({
-  baseURL: 'http://localhost:3001',
-})
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
 
 export default function PortalSection({ pacienteId, pacienteNome: pacienteNomeProp, isSearchMode = false, searchFields = {}, onSearchFieldChange }: PortalSectionProps) {
   const [activeTab, setActiveTab] = useState('evolucoes')
@@ -333,11 +324,13 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
         }
         // Definir o tipo de conteúdo para renderização correta
         const contentType = response.headers.get('content-type') || 'application/pdf'
+        console.log('Content-Type detectado:', contentType)
         setModalContentType(contentType)
         return response.blob()
       })
       .then(blob => {
         const fileUrl = URL.createObjectURL(blob)
+        console.log('Blob criado:', { type: blob.type, size: blob.size, fileUrl })
         setModalContent(fileUrl)
         setIsLoading(false) // Desativar indicador de carregamento
       })
@@ -462,9 +455,18 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
   const handleSaveEvolucoes = async () => {
     setIsSaving(true)
     try {
+      const token = localStorage.getItem('token')
       const promises = editedEvolucoes.map(async (evolucao) => {
         if (evolucao._id) {
-          return await api.put(`/evolucoes/${evolucao._id}`, evolucao)
+          const response = await fetch(`/api/evolucoes/${evolucao._id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(evolucao)
+          })
+          return await response.json()
         }
         return evolucao
       })
@@ -554,7 +556,13 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
       setEditedEvolucoes(updatedEvolucoes);
       
       // Enviar requisição para o backend
-      await api.delete(`/evolucoes/${evolucaoId}`)
+      const token = localStorage.getItem('token')
+      await fetch(`/api/evolucoes/${evolucaoId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
       
       // Recarregar dados do servidor para garantir sincronização
       await refetchEvolucoes()
@@ -595,7 +603,15 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
               : [])
       }
       
-      await api.put(`/evolucoes/${evolucao._id}`, evolucaoData)
+      const token = localStorage.getItem('token')
+      await fetch(`/api/evolucoes/${evolucao._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(evolucaoData)
+      })
       const updatedEvolucoes = [...editedEvolucoes]
       updatedEvolucoes[index] = { ...updatedEvolucoes[index], _editing: false }
       setEditedEvolucoes(updatedEvolucoes)
@@ -1547,15 +1563,14 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                   <p className="text-gray-600">Carregando arquivo...</p>
                 </div>
               ) : modalContent ? (
+                (() => {
+                  console.log('Renderizando modal - contentType:', modalContentType, 'isPDF:', modalContentType.includes('pdf'), 'isImage:', modalContentType.includes('image'))
+                  return null
+                })(),
                 modalContentType.includes('pdf') ? (
-                  <div className="w-full h-full min-h-[70vh] flex flex-col">
-                    {/* Usar renderização direta do PDF no Chromium */}
-                    <iframe 
-                      src={modalContent}
-                      className="w-full h-full flex-1" 
-                      title={modalFileName}
-                      frameBorder="0"
-                    />
+                  <div className="w-full h-full min-h-[70vh]">
+                    {/* Usar PDFViewer para renderização */}
+                    <PDFViewer file={modalContent} fileName={modalFileName} />
                     {/* Botões de ação para visualização alternativa */}
                     <div className="bg-gray-100 p-4 border-t border-gray-300 text-center">
                       <p className="text-sm text-gray-600 mb-2">Opções adicionais de visualização:</p>

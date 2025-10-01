@@ -31,7 +31,7 @@ export async function POST(
 
     // Fazer a requisição para o backend
     const response = await fetch(
-      `http://localhost:3004/exames/upload/${pacienteId}/${fieldName}`,
+      `http://localhost:3004/exames-preop/upload/${pacienteId}/${fieldName}`,
       {
         method: 'POST',
         headers: {

@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { pacienteId: string } }
-) {
+export async function GET(request: NextRequest) {
   try {
-    const pacienteId = params.pacienteId;
-    
     // Obter o token de autorização do header
     const authHeader = request.headers.get('authorization');
     
@@ -18,7 +13,7 @@ export async function GET(
     }
     
     // Fazer a requisição para o backend
-    const response = await fetch(`http://localhost:3004/exames-preop/paciente/${pacienteId}`, {
+    const response = await fetch('http://localhost:3004/exames-preop', {
       method: 'GET',
       headers: {
         'Authorization': authHeader,
@@ -27,7 +22,7 @@ export async function GET(
     
     if (!response.ok) {
       return NextResponse.json(
-        { error: `Erro ao buscar exames: ${response.status}` },
+        { error: `Erro ao buscar exames pré-operatórios: ${response.status}` },
         { status: response.status }
       );
     }
@@ -35,7 +30,7 @@ export async function GET(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Erro na rota de exames:', error);
+    console.error('Erro na rota de exames pré-operatórios:', error);
     return NextResponse.json(
       { error: 'Erro interno no servidor' },
       { status: 500 }
