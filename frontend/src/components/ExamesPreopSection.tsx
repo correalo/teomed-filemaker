@@ -87,7 +87,13 @@ const ExamesPreopSection: React.FC<ExamesPreopSectionProps> = ({ pacienteId, nom
         return;
       }
 
-      const data = {
+      const data: {
+        observacoes_geral: string;
+        status: string;
+        paciente_id?: string;
+        nome_paciente?: string;
+        data_cadastro?: string;
+      } = {
         observacoes_geral: observacoesGeral,
         status: status
       };
@@ -100,9 +106,9 @@ const ExamesPreopSection: React.FC<ExamesPreopSectionProps> = ({ pacienteId, nom
         method = 'PATCH';
       } else {
         // Se não existe, precisamos criar com os dados do paciente
-        data['paciente_id'] = pacienteId;
-        data['nome_paciente'] = nomePaciente;
-        data['data_cadastro'] = new Date().toISOString();
+        data.paciente_id = pacienteId;
+        data.nome_paciente = nomePaciente;
+        data.data_cadastro = new Date().toISOString();
       }
 
       const response = await fetch(url, {

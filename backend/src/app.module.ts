@@ -9,6 +9,7 @@ import { ReceitasModule } from './receitas/receitas.module';
 import { EvolucoesModule } from './evolucoes/evolucoes.module';
 import { AvaliacoesModule } from './avaliacoes/avaliacoes.module';
 import { ExamesPreopModule } from './exames_preop/exames-preop.module';
+import { PosOpModule } from './pos-op/pos-op.module';
 import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
 
@@ -30,6 +31,7 @@ import { AppController } from './app.controller';
     EvolucoesModule,
     AvaliacoesModule,
     ExamesPreopModule,
+    PosOpModule,
   ],
   controllers: [AppController],
 })

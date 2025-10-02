@@ -46,7 +46,11 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
   const [isPosOpModalOpen, setIsPosOpModalOpen] = useState(false)
   const [selectedEvolucaoId, setSelectedEvolucaoId] = useState<string | null>(null)
   const [posOpFiles, setPosOpFiles] = useState<File[]>([])
+  const [posOpExistingFiles, setPosOpExistingFiles] = useState<any[]>([])
   const [condutaTratamentos, setCondutaTratamentos] = useState<string>('')
+  const [dataPosOp, setDataPosOp] = useState<string>(format(new Date(), 'yyyy-MM-dd'))
+  const [editingFileIndex, setEditingFileIndex] = useState<number | null>(null)
+  const [editingFileName, setEditingFileName] = useState<string>('')
   
   // Carregar arquivos existentes  // Buscar avaliação do paciente
   const { data: avaliacaoData, isLoading: loadingAvaliacao, refetch: refetchAvaliacao } = useQuery({
@@ -228,16 +232,19 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
 
   // Função para lidar com upload de arquivos
   const handleFileUpload = async (files: File[], fieldId: string) => {
-    const validTypes = ['application/pdf', 'image/heic', 'image/jpeg', 'image/jpg', 'image/png']
-    const maxSize = 10 * 1024 * 1024 // 10MB
+    const validTypes = ['application/pdf', 'image/heic', 'image/heif', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    const maxSize = 50 * 1024 * 1024 // 50MB
     
     const validFiles = files.filter(file => {
-      if (!validTypes.includes(file.type)) {
-        toast.error(`Arquivo ${file.name} não é um tipo válido. Use PDF, HEIC, JPEG ou PNG.`)
+      // Aceitar qualquer tipo de imagem ou PDF
+      const isValidType = file.type.startsWith('image/') || file.type === 'application/pdf'
+      
+      if (!isValidType) {
+        toast.error(`Arquivo ${file.name} não é um tipo válido. Use PDF ou imagens (JPEG, PNG, HEIC, etc).`)
         return false
       }
       if (file.size > maxSize) {
-        toast.error(`Arquivo ${file.name} é muito grande. Máximo 10MB.`)
+        toast.error(`Arquivo ${file.name} é muito grande. Máximo 50MB.`)
         return false
       }
       return true
@@ -398,38 +405,91 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
   }
 
   // Funções para modal de pós-operatório
-  const openPosOpModal = (evolucaoId: string) => {
+  const openPosOpModal = async (evolucaoId: string, evolucao: any) => {
     setSelectedEvolucaoId(evolucaoId)
     setPosOpFiles([])
+    setPosOpExistingFiles([])
     setCondutaTratamentos('')
+    
+    // Usar a data da evolução
+    if (evolucao.data_retorno) {
+      try {
+        const dataEvolucao = new Date(evolucao.data_retorno)
+        setDataPosOp(format(dataEvolucao, 'yyyy-MM-dd'))
+      } catch {
+        setDataPosOp(format(new Date(), 'yyyy-MM-dd'))
+      }
+    } else {
+      setDataPosOp(format(new Date(), 'yyyy-MM-dd'))
+    }
+    
+    // Atualizar nome do paciente com o da evolução
+    if (evolucao.nome_paciente) {
+      setPacienteNome(evolucao.nome_paciente)
+    }
+    
     setIsPosOpModalOpen(true)
+    
+    // Carregar dados existentes de pós-op
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/pos-op/${evolucaoId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        if (data) {
+          setPosOpExistingFiles(data.exames || [])
+          setCondutaTratamentos(data.conduta_tratamentos || '')
+          // Manter a data da evolução, não sobrescrever com a data do pós-op
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados de pós-op:', error)
+    }
   }
 
   const closePosOpModal = () => {
     setIsPosOpModalOpen(false)
     setSelectedEvolucaoId(null)
     setPosOpFiles([])
+    setPosOpExistingFiles([])
     setCondutaTratamentos('')
+    setDataPosOp(format(new Date(), 'yyyy-MM-dd'))
   }
 
   const handlePosOpFileUpload = (files: FileList | null) => {
     if (!files) return
     
-    const validTypes = ['application/pdf', 'image/heic', 'image/jpeg', 'image/jpg', 'image/png']
-    const maxSize = 10 * 1024 * 1024 // 10MB
+    console.log('📁 handlePosOpFileUpload chamado com', files.length, 'arquivo(s)')
+    
+    const validTypes = ['application/pdf', 'image/heic', 'image/heif', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+    const maxSize = 50 * 1024 * 1024 // 50MB
     
     const validFiles = Array.from(files).filter(file => {
-      if (!validTypes.includes(file.type)) {
-        toast.error(`Arquivo ${file.name} não é um tipo válido. Use PDF, HEIC, JPEG ou PNG.`)
+      console.log('Validando arquivo:', file.name, 'tipo:', file.type, 'tamanho:', file.size)
+      
+      // Aceitar qualquer tipo de imagem ou PDF
+      const isValidType = file.type.startsWith('image/') || file.type === 'application/pdf'
+      
+      if (!isValidType) {
+        console.log('❌ Tipo inválido:', file.type)
+        toast.error(`Arquivo ${file.name} não é um tipo válido. Use PDF ou imagens (HEIC, JPEG, JPG, PNG).`)
         return false
       }
       if (file.size > maxSize) {
-        toast.error(`Arquivo ${file.name} é muito grande. Máximo 10MB.`)
+        console.log('❌ Tamanho excedido:', file.size)
+        toast.error(`Arquivo ${file.name} é muito grande. Máximo 50MB.`)
         return false
       }
+      console.log('✅ Arquivo válido:', file.name)
       return true
     })
 
+    console.log('Total de arquivos válidos:', validFiles.length)
     setPosOpFiles(prev => [...prev, ...validFiles])
   }
 
@@ -437,16 +497,170 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
     setPosOpFiles(prev => prev.filter((_, i) => i !== index))
   }
 
+  const openPosOpFile = async (nomeArquivo: string, tipo: string) => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/pos-op/file/${selectedEvolucaoId}/${nomeArquivo}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao carregar arquivo')
+      }
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      
+      setModalContent(url)
+      setModalContentType(tipo)
+      setModalFileName(nomeArquivo)
+      setIsModalOpen(true)
+    } catch (error) {
+      console.error('Erro ao abrir arquivo:', error)
+      toast.error('Erro ao abrir arquivo')
+    }
+  }
+
+  const saveFileNameEdit = async (index: number) => {
+    if (!editingFileName.trim()) {
+      setEditingFileIndex(null)
+      setEditingFileName('')
+      return
+    }
+
+    try {
+      const file = posOpExistingFiles[index]
+      const token = localStorage.getItem('token')
+      
+      const response = await fetch(
+        `/api/pos-op/file/${selectedEvolucaoId}/${file.nome_arquivo}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ novo_nome_original: editingFileName.trim() }),
+        }
+      )
+
+      if (response.ok) {
+        setPosOpExistingFiles(prev => 
+          prev.map((f, i) => 
+            i === index ? { ...f, nome_original: editingFileName.trim() } : f
+          )
+        )
+        toast.success('Nome do arquivo atualizado!')
+      } else {
+        toast.error('Erro ao atualizar nome do arquivo')
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar nome:', error)
+      toast.error('Erro ao atualizar nome do arquivo')
+    }
+
+    setEditingFileIndex(null)
+    setEditingFileName('')
+  }
+
   const savePosOpData = async () => {
-    if (!selectedEvolucaoId) return
+    console.log('🔵 savePosOpData chamado')
+    console.log('selectedEvolucaoId:', selectedEvolucaoId)
+    console.log('pacienteId:', pacienteId)
+    console.log('posOpFiles:', posOpFiles)
+    console.log('condutaTratamentos:', condutaTratamentos)
+    
+    if (!selectedEvolucaoId) {
+      console.log('❌ selectedEvolucaoId está vazio')
+      return
+    }
     
     try {
-      // Aqui você pode implementar a lógica de salvamento
-      // Por enquanto, vamos apenas mostrar uma mensagem de sucesso
+      const token = localStorage.getItem('token')
+      console.log('Token obtido:', token ? 'Sim' : 'Não')
+      
+      // 1. Upload dos arquivos
+      if (posOpFiles.length > 0) {
+        console.log('📤 Iniciando upload de', posOpFiles.length, 'arquivo(s)')
+        const formData = new FormData()
+        posOpFiles.forEach(file => {
+          formData.append('files', file)
+          console.log('Arquivo adicionado:', file.name, file.size, 'bytes', 'tipo:', file.type)
+        })
+        formData.append('nome_paciente', pacienteNome)
+        formData.append('data_pos_op', dataPosOp)
+
+        const uploadUrl = `/api/pos-op/upload/${pacienteId}/${selectedEvolucaoId}`
+        console.log('URL de upload:', uploadUrl)
+
+        const uploadResponse = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        })
+
+        console.log('Upload response status:', uploadResponse.status)
+        
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text()
+          console.error('Erro no upload:', errorText)
+          throw new Error('Erro ao fazer upload dos arquivos')
+        }
+        
+        const uploadData = await uploadResponse.json()
+        console.log('✅ Upload concluído:', uploadData)
+        
+        // Atualizar lista de arquivos existentes
+        if (uploadData.exames) {
+          setPosOpExistingFiles(uploadData.exames)
+        }
+      } else {
+        console.log('⚠️ Nenhum arquivo para upload')
+      }
+
+      // 2. Salvar conduta e tratamentos
+      if (condutaTratamentos.trim()) {
+        console.log('📝 Salvando conduta e tratamentos')
+        const condutaUrl = `/api/pos-op/conduta/${selectedEvolucaoId}`
+        console.log('URL de conduta:', condutaUrl)
+        
+        const condutaResponse = await fetch(condutaUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ conduta_tratamentos: condutaTratamentos }),
+        })
+
+        console.log('Conduta response status:', condutaResponse.status)
+        
+        if (!condutaResponse.ok) {
+          const errorText = await condutaResponse.text()
+          console.error('Erro ao salvar conduta:', errorText)
+          throw new Error('Erro ao salvar conduta e tratamentos')
+        }
+        
+        const condutaData = await condutaResponse.json()
+        console.log('✅ Conduta salva:', condutaData)
+      } else {
+        console.log('⚠️ Conduta vazia, não será salva')
+      }
+
+      console.log('✅ Tudo salvo com sucesso!')
       toast.success('Dados de pós-operatório salvos com sucesso!')
-      closePosOpModal()
+      
+      // Limpar lista de novos arquivos
+      setPosOpFiles([])
+      
+      // Não fechar o modal, apenas atualizar
+      // closePosOpModal()
     } catch (error) {
-      console.error('Erro ao salvar dados de pós-op:', error)
+      console.error('❌ Erro ao salvar dados de pós-op:', error)
       toast.error('Erro ao salvar dados. Tente novamente.')
     }
   }
@@ -660,8 +874,17 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
           ? evolucao.medicacoes 
           : (evolucao.medicacoes && typeof evolucao.medicacoes === 'string' 
               ? (evolucao.medicacoes as string).split(',').map(item => item.trim()) 
-              : [])
+              : []),
+        // Converter data_retorno para formato dd/MM/yyyy para evitar problemas de timezone
+        data_retorno: evolucao.data_retorno && /^\d{4}-\d{2}-\d{2}$/.test(evolucao.data_retorno)
+          ? (() => {
+              const [year, month, day] = evolucao.data_retorno.split('-')
+              return `${day}/${month}/${year}`
+            })()
+          : evolucao.data_retorno
       }
+      
+      console.log('📅 Salvando data:', evolucao.data_retorno, '→', evolucaoData.data_retorno)
       
       const token = localStorage.getItem('token')
       await fetch(`/api/evolucoes/${evolucao._id}`, {
@@ -717,6 +940,44 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
       return format(date, 'dd/MM/yyyy', { locale: ptBR })
     } catch (error) {
       return dateString
+    }
+  }
+
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return ''
+    
+    console.log('🔍 formatDateForInput recebeu:', dateString)
+    
+    try {
+      // Se já está no formato ISO (yyyy-MM-dd), retornar direto
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        console.log('✅ Já está em formato ISO, retornando:', dateString)
+        return dateString
+      }
+      
+      // Se está no formato dd/MM/yyyy
+      const parts = dateString.split('/')
+      if (parts.length === 3) {
+        const result = `${parts[2]}-${parts[1]}-${parts[0]}`
+        console.log('✅ Convertido de dd/MM/yyyy:', dateString, '→', result)
+        return result
+      }
+      
+      // Converter de ISO string para yyyy-MM-dd usando UTC para evitar mudança de dia
+      const date = new Date(dateString)
+      console.log('📅 Date object:', date)
+      console.log('📅 UTC:', date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate())
+      console.log('📅 Local:', date.getFullYear(), date.getMonth() + 1, date.getDate())
+      
+      const year = date.getUTCFullYear()
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+      const day = String(date.getUTCDate()).padStart(2, '0')
+      const result = `${year}-${month}-${day}`
+      console.log('✅ Resultado final:', result)
+      return result
+    } catch (error) {
+      console.error('❌ Erro em formatDateForInput:', error)
+      return ''
     }
   }
 
@@ -837,7 +1098,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                       {evolucao._editing ? (
                         <input
                           type="date"
-                          value={evolucao.data_retorno ? new Date(evolucao.data_retorno).toISOString().split('T')[0] : ''}
+                          value={formatDateForInput(evolucao.data_retorno)}
                           onChange={(e) => handleInputChange(index, 'data_retorno', e.target.value)}
                           className="col-span-1 border border-gray-300 rounded px-1 py-1 text-xs"
                         />
@@ -937,7 +1198,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                         ) : (
                           <>
                             <button
-                              onClick={() => openPosOpModal(evolucao._id || '')}
+                              onClick={() => openPosOpModal(evolucao._id || '', evolucao)}
                               className="bg-green-600 hover:bg-green-700 text-white px-1 py-1 rounded text-xs"
                               title="Pós-Operatório"
                               disabled={!evolucao._id}
@@ -1021,7 +1282,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                     {/* Botões de ação */}
                     <div className="flex gap-2 pt-3 border-t border-gray-200">
                       <button
-                        onClick={() => openPosOpModal(evolucao._id || '')}
+                        onClick={() => openPosOpModal(evolucao._id || '', evolucao)}
                         className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium"
                         disabled={!evolucao._id}
                       >
@@ -1126,7 +1387,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                           <span className="font-medium text-filemaker-green">Clique para enviar</span> ou arraste arquivos
                         </div>
                         <div className="text-xs text-gray-500">
-                          PDF, HEIC, JPEG, PNG (máx. 10MB)
+                          PDF, HEIC, JPEG, PNG (máx. 50MB)
                         </div>
                       </div>
                     </div>
@@ -1254,7 +1515,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                           <span className="font-medium text-black">Clique para enviar</span> ou arraste arquivos
                         </div>
                         <div className="text-xs text-gray-500">
-                          PDF, HEIC, JPEG, PNG (máx. 10MB)
+                          PDF, HEIC, JPEG, PNG (máx. 50MB)
                         </div>
                       </div>
                     </div>
@@ -1672,18 +1933,55 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
       
       {/* Modal para visualização de arquivos */}
       {isModalOpen && modalContent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
           <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-6xl max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center p-4 border-b">
               <h3 className="text-lg font-semibold truncate">{modalFileName}</h3>
-              <button 
-                onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700 focus:outline-none"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Botão Imprimir */}
+                <button 
+                  onClick={() => {
+                    const printWindow = window.open(modalContent || '', '_blank')
+                    if (printWindow) {
+                      printWindow.onload = () => {
+                        printWindow.print()
+                      }
+                    }
+                  }}
+                  className="text-gray-600 hover:text-blue-600 focus:outline-none"
+                  title="Imprimir"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                </button>
+                
+                {/* Botão WhatsApp */}
+                <button 
+                  onClick={() => {
+                    const message = `Documento: ${modalFileName}`
+                    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                    window.open(whatsappUrl, '_blank')
+                  }}
+                  className="text-gray-600 hover:text-green-600 focus:outline-none"
+                  title="Enviar no WhatsApp"
+                >
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                  </svg>
+                </button>
+                
+                {/* Botão Fechar */}
+                <button 
+                  onClick={closeModal}
+                  className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                  title="Fechar"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div className="flex-1 overflow-auto p-1 bg-gray-100">
               {modalContent && (
@@ -1804,6 +2102,19 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                 />
               </div>
 
+              {/* Data do Pós-Operatório */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Data do Pós-Operatório
+                </label>
+                <input
+                  type="date"
+                  value={dataPosOp}
+                  onChange={(e) => setDataPosOp(e.target.value)}
+                  className="filemaker-input w-full"
+                />
+              </div>
+
               {/* Upload de Exames de Pós-Op */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1846,7 +2157,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                       <span className="font-medium text-green-600">Clique para enviar</span> ou arraste arquivos
                     </div>
                     <div className="text-xs text-gray-500">
-                      PDF, HEIC, JPEG, PNG (máx. 10MB)
+                      PDF, HEIC, JPEG, JPG, PNG (máx. 50MB)
                     </div>
                   </div>
                 </div>
@@ -1886,6 +2197,109 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                     ))}
                   </div>
                 )}
+
+                {/* Arquivos já salvos */}
+                {posOpExistingFiles.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Arquivos Salvos</h4>
+                    <div className="space-y-2">
+                      {posOpExistingFiles.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between bg-blue-50 p-2 rounded text-sm border border-blue-200">
+                          <div className="flex items-center space-x-2 flex-1">
+                            <div className="w-4 h-4 text-blue-500 flex-shrink-0">
+                              {file.tipo?.includes('pdf') ? (
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              ) : (
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              )}
+                            </div>
+                            
+                            {editingFileIndex === index ? (
+                              <input
+                                type="text"
+                                value={editingFileName}
+                                onChange={(e) => setEditingFileName(e.target.value)}
+                                onBlur={() => saveFileNameEdit(index)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') saveFileNameEdit(index)
+                                  if (e.key === 'Escape') {
+                                    setEditingFileIndex(null)
+                                    setEditingFileName('')
+                                  }
+                                }}
+                                className="flex-1 border border-blue-400 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                autoFocus
+                              />
+                            ) : (
+                              <span 
+                                className="truncate max-w-[300px] cursor-pointer hover:text-blue-600"
+                                onClick={() => openPosOpFile(file.nome_arquivo, file.tipo)}
+                              >
+                                {file.nome_original}
+                              </span>
+                            )}
+                            
+                            <span className="text-gray-400 text-xs flex-shrink-0">
+                              ({(file.tamanho / 1024 / 1024).toFixed(1)}MB)
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1 ml-2">
+                            {/* Botão Editar Nome */}
+                            {editingFileIndex !== index && (
+                              <button
+                                onClick={() => {
+                                  setEditingFileIndex(index)
+                                  setEditingFileName(file.nome_original)
+                                }}
+                                className="text-blue-500 hover:text-blue-700 p-1"
+                                title="Editar nome"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                            )}
+                            
+                            {/* Botão Remover */}
+                            <button
+                              onClick={async () => {
+                                if (confirm('Deseja remover este arquivo?')) {
+                                  try {
+                                    const token = localStorage.getItem('token')
+                                    const response = await fetch(`/api/pos-op/file/${selectedEvolucaoId}/${file.nome_arquivo}`, {
+                                      method: 'DELETE',
+                                      headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                      },
+                                    })
+                                    if (response.ok) {
+                                      setPosOpExistingFiles(prev => prev.filter((_, i) => i !== index))
+                                      toast.success('Arquivo removido com sucesso!')
+                                    }
+                                  } catch (error) {
+                                    console.error('Erro ao remover arquivo:', error)
+                                    toast.error('Erro ao remover arquivo')
+                                  }
+                                }
+                              }}
+                              className="text-red-500 hover:text-red-700 p-1"
+                              title="Remover arquivo"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Conduta e Tratamentos */}
@@ -1911,7 +2325,10 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                 Cancelar
               </button>
               <button
-                onClick={savePosOpData}
+                onClick={() => {
+                  console.log('🟢 Botão Salvar clicado!')
+                  savePosOpData()
+                }}
                 className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
               >
                 Salvar

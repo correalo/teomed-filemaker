@@ -61,6 +61,18 @@ export class EvolucoesService {
   }
 
   async update(id: string, updateEvolucaoDto: UpdateEvolucaoDto): Promise<Evolucao> {
+    // Se a data está no formato dd/MM/yyyy, converter para Date sem problemas de timezone
+    if (updateEvolucaoDto.data_retorno && typeof updateEvolucaoDto.data_retorno === 'string') {
+      const dateStr = updateEvolucaoDto.data_retorno as string;
+      
+      // Se está no formato dd/MM/yyyy
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) {
+        const [day, month, year] = dateStr.split('/');
+        // Criar data no meio-dia UTC para evitar problemas de timezone
+        updateEvolucaoDto.data_retorno = new Date(`${year}-${month}-${day}T12:00:00.000Z`) as any;
+      }
+    }
+    
     return this.evolucaoModel.findByIdAndUpdate(id, updateEvolucaoDto, { new: true }).exec();
   }
 
