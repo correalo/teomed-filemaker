@@ -236,11 +236,37 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
       }
       
       // Converte do formato ISO (yyyy-MM-dd) para dd/MM/yyyy
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        return dateString; // Se não for uma data válida, retorna o original
+      // Usa parseISO para evitar problemas de fuso horário
+      const dateParts = dateString.split('T')[0].split('-');
+      if (dateParts.length === 3) {
+        const [year, month, day] = dateParts;
+        return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`;
       }
-      return format(date, 'dd/MM/yyyy', { locale: ptBR });
+      
+      return dateString;
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  // Função para converter data para o formato do input (yyyy-MM-dd) sem alterar o dia
+  const toInputDateFormat = (dateString: string) => {
+    if (!dateString) return '';
+    
+    try {
+      // Se já está no formato yyyy-MM-dd, retorna direto
+      if (dateString.match(/^\d{4}-\d{2}-\d{2}/)) {
+        return dateString.split('T')[0];
+      }
+      
+      // Se está no formato dd/MM/yyyy, converte
+      const parts = dateString.split('/');
+      if (parts.length === 3) {
+        const [day, month, year] = parts;
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+      }
+      
+      return dateString;
     } catch (error) {
       return dateString;
     }
@@ -464,7 +490,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                     {isEditingLocal ? (
                       <input
                         type="date"
-                        value={evolucao.data_retorno || ''}
+                        value={toInputDateFormat(evolucao.data_retorno || '')}
                         onChange={(e) => handleInputChange(index, 'data_retorno', e.target.value)}
                         className="border rounded p-1 w-full text-sm"
                       />

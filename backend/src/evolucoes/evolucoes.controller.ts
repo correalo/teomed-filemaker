@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Put, Param, Delete, Query } from '@nestjs/common';
 import { EvolucoesService } from './evolucoes.service';
 import { CreateEvolucaoDto } from './dto/create-evolucao.dto';
 import { UpdateEvolucaoDto } from './dto/update-evolucao.dto';
@@ -52,6 +52,11 @@ export class EvolucoesController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateEvolucaoDto: UpdateEvolucaoDto) {
+    return this.evolucoesService.update(id, updateEvolucaoDto);
+  }
+
+  @Put(':id')
+  updatePut(@Param('id') id: string, @Body() updateEvolucaoDto: UpdateEvolucaoDto) {
     return this.evolucoesService.update(id, updateEvolucaoDto);
   }
 

@@ -12,7 +12,7 @@ export class Evolucao {
   nome_paciente: string;
 
   @Prop()
-  data_retorno: Date;
+  data_retorno: string;
 
   @Prop()
   delta_t: string;
