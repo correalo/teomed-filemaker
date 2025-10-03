@@ -456,15 +456,15 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
         <table className="min-w-full bg-white">
           <thead>
             <tr className="bg-gray-100 border-b">
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text">NOME</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text">DATA</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text">DELTA T</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text">PESO</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text">DELTA PESO</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text">EXAMES ALTERADOS</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text">MEDICAÇÕES</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-48">NOME</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-32">DATA</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-24">DELTA T</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-20">PESO</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-24">DELTA PESO</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-40">EXAMES ALTERADOS</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-48">MEDICAÇÕES</th>
               {(isEditingLocal || !isSearchMode) && (
-                <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text">AÇÕES</th>
+                <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-20">AÇÕES</th>
               )}
             </tr>
           </thead>
@@ -492,7 +492,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                         type="date"
                         value={toInputDateFormat(evolucao.data_retorno || '')}
                         onChange={(e) => handleInputChange(index, 'data_retorno', e.target.value)}
-                        className="border rounded p-1 w-full text-sm"
+                        className="border rounded p-1 text-sm w-28"
                       />
                     ) : (
                       formatDate(evolucao.data_retorno)
@@ -504,7 +504,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                         type="text"
                         value={evolucao.delta_t || ''}
                         onChange={(e) => handleInputChange(index, 'delta_t', e.target.value)}
-                        className="border rounded p-1 w-full text-sm"
+                        className="border rounded p-1 text-sm w-20"
                       />
                     ) : (
                       evolucao.delta_t
@@ -516,7 +516,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                         type="number"
                         value={evolucao.peso || ''}
                         onChange={(e) => handleInputChange(index, 'peso', parseFloat(e.target.value))}
-                        className="border rounded p-1 w-full text-sm"
+                        className="border rounded p-1 text-sm w-16"
                         step="0.1"
                       />
                     ) : (
@@ -529,7 +529,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                         type="number"
                         value={evolucao.delta_peso || ''}
                         onChange={(e) => handleInputChange(index, 'delta_peso', parseFloat(e.target.value))}
-                        className="border rounded p-1 w-full text-sm"
+                        className="border rounded p-1 text-sm w-16"
                         step="0.1"
                       />
                     ) : (
@@ -542,7 +542,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                         type="text"
                         value={evolucao.exames_alterados || ''}
                         onChange={(e) => handleInputChange(index, 'exames_alterados', e.target.value)}
-                        className="border rounded p-1 w-full text-sm"
+                        className="border rounded p-1 text-sm w-36"
                       />
                     ) : (
                       evolucao.exames_alterados
@@ -554,7 +554,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                         type="text"
                         value={Array.isArray(evolucao.medicacoes) ? evolucao.medicacoes.join(', ') : ''}
                         onChange={(e) => handleInputChange(index, 'medicacoes', e.target.value.split(',').map(item => item.trim()))}
-                        className="border rounded p-1 w-full text-sm"
+                        className="border rounded p-1 text-sm w-44"
                         placeholder="Separar por vírgulas"
                       />
                     ) : (
