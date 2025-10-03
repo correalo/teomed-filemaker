@@ -453,18 +453,18 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
       )}
 
       <div className="overflow-x-auto">
-        <table className="min-w-full bg-white">
+        <table className="min-w-full bg-white table-fixed">
           <thead>
             <tr className="bg-gray-100 border-b">
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-48">NOME</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-32">DATA</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-24">DELTA T</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-20">PESO</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-24">DELTA PESO</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-40">EXAMES ALTERADOS</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-48">MEDICAÇÕES</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '180px' }}>NOME</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '140px' }}>DATA</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '100px' }}>DELTA T</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '80px' }}>PESO</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '100px' }}>DELTA PESO</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '180px' }}>EXAMES ALTERADOS</th>
+              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '200px' }}>MEDICAÇÕES</th>
               {(isEditingLocal || !isSearchMode) && (
-                <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text w-20">AÇÕES</th>
+                <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '80px' }}>AÇÕES</th>
               )}
             </tr>
           </thead>
@@ -492,7 +492,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                         type="date"
                         value={toInputDateFormat(evolucao.data_retorno || '')}
                         onChange={(e) => handleInputChange(index, 'data_retorno', e.target.value)}
-                        className="border rounded p-1 text-sm w-28"
+                        className="border rounded p-1 text-sm w-full"
                       />
                     ) : (
                       formatDate(evolucao.data_retorno)
@@ -504,7 +504,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                         type="text"
                         value={evolucao.delta_t || ''}
                         onChange={(e) => handleInputChange(index, 'delta_t', e.target.value)}
-                        className="border rounded p-1 text-sm w-20"
+                        className="border rounded p-1 text-sm w-full"
                       />
                     ) : (
                       evolucao.delta_t
@@ -516,7 +516,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                         type="number"
                         value={evolucao.peso || ''}
                         onChange={(e) => handleInputChange(index, 'peso', parseFloat(e.target.value))}
-                        className="border rounded p-1 text-sm w-16"
+                        className="border rounded p-1 text-sm w-full"
                         step="0.1"
                       />
                     ) : (
@@ -529,7 +529,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                         type="number"
                         value={evolucao.delta_peso || ''}
                         onChange={(e) => handleInputChange(index, 'delta_peso', parseFloat(e.target.value))}
-                        className="border rounded p-1 text-sm w-16"
+                        className="border rounded p-1 text-sm w-full"
                         step="0.1"
                       />
                     ) : (
@@ -542,7 +542,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                         type="text"
                         value={evolucao.exames_alterados || ''}
                         onChange={(e) => handleInputChange(index, 'exames_alterados', e.target.value)}
-                        className="border rounded p-1 text-sm w-36"
+                        className="border rounded p-1 text-sm w-full"
                       />
                     ) : (
                       evolucao.exames_alterados
@@ -554,7 +554,7 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
                         type="text"
                         value={Array.isArray(evolucao.medicacoes) ? evolucao.medicacoes.join(', ') : ''}
                         onChange={(e) => handleInputChange(index, 'medicacoes', e.target.value.split(',').map(item => item.trim()))}
-                        className="border rounded p-1 text-sm w-44"
+                        className="border rounded p-1 text-sm w-full"
                         placeholder="Separar por vírgulas"
                       />
                     ) : (
