@@ -1161,7 +1161,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                 AVALIAÇÃO CLÍNICA
               </h3>
               <div className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
                   <div>
                     <label className="block text-xs text-filemaker-text mb-1">PESO</label>
                     <div className="flex items-stretch">
@@ -1331,7 +1331,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                   </div>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 text-xs">
                 <label className="flex items-center space-x-2">
                   <input 
                     type="checkbox" 
@@ -1440,7 +1440,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                   <h4 className="text-xs font-medium text-filemaker-text mb-1 uppercase">
                     ANTECEDENTE {tipo === 'tios' ? 'TIOS' : tipo === 'avos' ? 'AVÓS' : tipo}
                   </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 text-xs">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-1 text-xs">
                     <label className="flex items-center space-x-1">
                       <input 
                         type="checkbox" 
