@@ -34,6 +34,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingAudio, setIsUploadingAudio] = useState(false)
   const [isUploadingPdf, setIsUploadingPdf] = useState(false)
+  const [showPdfModal, setShowPdfModal] = useState(false)
   const toast = useToast()
   
   // Atualizar state local quando prop mudar
@@ -1079,22 +1080,33 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                 {/* Gravação de Áudio */}
                 <div>
                   <label className="block text-xs text-filemaker-text mb-1">GRAVAÇÃO</label>
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <AudioRecorder
-                      onRecordingComplete={handleAudioRecording}
-                      disabled={!isEditing || isUploadingAudio}
-                    />
-                    {isUploadingAudio && (
-                      <span className="text-xs text-blue-600">Enviando áudio...</span>
+                  <div className="space-y-2">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                      <AudioRecorder
+                        onRecordingComplete={handleAudioRecording}
+                        disabled={!isEditing || isUploadingAudio}
+                      />
+                      {isUploadingAudio && (
+                        <span className="text-xs text-blue-600">Enviando áudio...</span>
+                      )}
+                      <input
+                        type="text"
+                        className={`flex-1 min-w-0 px-2 py-1 text-sm rounded border ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-100 cursor-not-allowed border-gray-200'}`}
+                        placeholder="Transcrição do áudio aparecerá aqui..."
+                        readOnly={!isEditing}
+                        value={(isEditing ? (editedPaciente?.hma_transcricao || '') : (paciente.hma_transcricao || '')) || ''}
+                        onChange={(e) => handleInputChange('hma_transcricao', e.target.value)}
+                      />
+                    </div>
+                    {/* Player de Áudio */}
+                    {(isEditing ? editedPaciente?.hma_audio_url : paciente.hma_audio_url) && (
+                      <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                        <audio controls className="w-full" style={{height: '32px'}}>
+                          <source src={`http://localhost:3004${isEditing ? editedPaciente?.hma_audio_url : paciente.hma_audio_url}`} type="audio/webm" />
+                          Seu navegador não suporta o elemento de áudio.
+                        </audio>
+                      </div>
                     )}
-                    <input
-                      type="text"
-                      className={`flex-1 min-w-0 px-2 py-1 text-sm rounded border ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-100 cursor-not-allowed border-gray-200'}`}
-                      placeholder="Transcrição do áudio aparecerá aqui..."
-                      readOnly={!isEditing}
-                      value={(isEditing ? (editedPaciente?.hma_transcricao || '') : (paciente.hma_transcricao || '')) || ''}
-                      onChange={(e) => handleInputChange('hma_transcricao', e.target.value)}
-                    />
                   </div>
                 </div>
 
@@ -1132,6 +1144,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                             type="button"
                             className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 whitespace-nowrap"
                             title="Visualizar PDF"
+                            onClick={() => setShowPdfModal(true)}
                           >
                             👁️ Ver
                           </button>
@@ -1778,6 +1791,30 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
           </div>
         </div>
       </div>
+      )}
+
+      {/* Modal para visualizar PDF */}
+      {showPdfModal && (isEditing ? editedPaciente?.hma_resumo_pdf : paciente.hma_resumo_pdf) && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowPdfModal(false)}>
+          <div className="bg-white rounded-lg w-full max-w-4xl h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Resumo HMA - PDF</h3>
+              <button
+                onClick={() => setShowPdfModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src={`http://localhost:3004/uploads/hma/pdf/${isEditing ? editedPaciente?.hma_resumo_pdf : paciente.hma_resumo_pdf}`}
+                className="w-full h-full"
+                title="PDF Resumo HMA"
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
