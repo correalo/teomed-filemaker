@@ -1005,13 +1005,12 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
 
             {/* Header das colunas - Apenas desktop */}
             <div className="hidden lg:block bg-gray-100 border-b border-gray-300 overflow-x-auto">
-              <div className="grid grid-cols-12 gap-1 px-2 py-1 min-w-max">
+              <div className="grid grid-cols-10 gap-1 px-2 py-1 min-w-max">
                 <div className="col-span-2 lg:col-span-3 text-xs font-bold text-filemaker-text">NOME</div>
                 <div className="col-span-1 text-xs font-bold text-filemaker-text">DATA</div>
                 <div className="col-span-1 text-xs font-bold text-filemaker-text">DELTA T</div>
                 <div className="col-span-1 text-xs font-bold text-filemaker-text">PESO</div>
                 <div className="col-span-1 text-xs font-bold text-filemaker-text">DELTA P</div>
-                <div className="col-span-2 text-xs font-bold text-filemaker-text">EXAMES ALT</div>
                 <div className="col-span-2 text-xs font-bold text-filemaker-text">MEDICAÇÕES</div>
                 <div className="col-span-2 lg:col-span-1 text-xs font-bold text-filemaker-text flex justify-center">
                   AÇÕES
@@ -1022,7 +1021,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
             {/* Formulário para nova evolução */}
             {showAddForm && !isSearchMode && (
               <div className="border-b border-gray-300 bg-yellow-50 overflow-x-auto">
-                <div className="grid grid-cols-12 gap-1 px-2 py-2 min-w-max">
+                <div className="grid grid-cols-10 gap-1 px-2 py-2 min-w-max">
                   <input
                     type="text"
                     value={newEvolucao.nome_paciente || pacienteNome}
@@ -1061,12 +1060,6 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                   />
                   <input
                     type="text"
-                    value={newEvolucao.exames_alterados}
-                    onChange={(e) => setNewEvolucao({ ...newEvolucao, exames_alterados: e.target.value })}
-                    className="col-span-2 border border-gray-300 rounded px-1 py-1 text-xs"
-                  />
-                  <input
-                    type="text"
                     value={Array.isArray(newEvolucao.medicacoes) ? newEvolucao.medicacoes.join(', ') : ''}
                     onChange={(e) => setNewEvolucao({ ...newEvolucao, medicacoes: e.target.value.split(',').map(item => item.trim()) })}
                     className="col-span-2 border border-gray-300 rounded px-1 py-1 text-xs"
@@ -1090,7 +1083,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
               {editedEvolucoes.length > 0 ? (
                 editedEvolucoes.map((evolucao, index) => (
                   <div key={`evolucao-${index}-${evolucao._id || index}`} className="border-b border-gray-200">
-                    <div className="grid grid-cols-12 gap-1 px-2 py-2 min-w-max">
+                    <div className="grid grid-cols-10 gap-1 px-2 py-2 min-w-max">
                       <div className="col-span-2 lg:col-span-3 text-xs py-1 px-1 border border-gray-200 rounded bg-blue-50">
                         {evolucao.nome_paciente}
                       </div>
@@ -1146,19 +1139,6 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                       ) : (
                         <div className="col-span-1 text-xs py-1 px-1 border border-gray-200 rounded bg-white">
                           {evolucao.delta_peso}
-                        </div>
-                      )}
-                      
-                      {evolucao._editing ? (
-                        <input
-                          type="text"
-                          value={evolucao.exames_alterados || ''}
-                          onChange={(e) => handleInputChange(index, 'exames_alterados', e.target.value)}
-                          className="col-span-2 border border-gray-300 rounded px-1 py-1 text-xs"
-                        />
-                      ) : (
-                        <div className="col-span-2 text-xs py-1 px-1 border border-gray-200 rounded bg-white">
-                          {evolucao.exames_alterados}
                         </div>
                       )}
                       
@@ -1265,12 +1245,8 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                       </div>
                     </div>
 
-                    {/* Exames e Medicações */}
-                    <div className="space-y-2 mb-3">
-                      <div>
-                        <div className="text-xs font-bold text-gray-500 mb-1">EXAMES ALTERADOS</div>
-                        <div className="text-sm bg-gray-50 p-2 rounded">{evolucao.exames_alterados || '-'}</div>
-                      </div>
+                    {/* Medicações */}
+                    <div className="mb-3">
                       <div>
                         <div className="text-xs font-bold text-gray-500 mb-1">MEDICAÇÕES</div>
                         <div className="text-sm bg-gray-50 p-2 rounded">

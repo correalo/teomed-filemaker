@@ -316,16 +316,15 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
 
       {isSearchMode && (
         <div className="mb-4 p-3 bg-orange-100 rounded-md">
-          <div className="grid grid-cols-7 gap-2 mb-2">
+          <div className="grid grid-cols-6 gap-2 mb-2">
             <div className="font-bold text-xs text-filemaker-text">NOME</div>
             <div className="font-bold text-xs text-filemaker-text">DATA</div>
             <div className="font-bold text-xs text-filemaker-text">DELTA T</div>
             <div className="font-bold text-xs text-filemaker-text">PESO</div>
             <div className="font-bold text-xs text-filemaker-text">DELTA PESO</div>
-            <div className="font-bold text-xs text-filemaker-text">EXAMES ALTERADOS</div>
             <div className="font-bold text-xs text-filemaker-text">MEDICAÇÕES</div>
           </div>
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-6 gap-2">
             <input
               type="text"
               value={searchFields.nome_paciente || pacienteNome || ''}
@@ -363,13 +362,6 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
             />
             <input
               type="text"
-              value={searchFields.exames_alterados || ''}
-              onChange={(e) => handleSearchChange('exames_alterados', e.target.value)}
-              className="border rounded p-1 text-sm bg-[#fef3e2]"
-              placeholder="Buscar exames..."
-            />
-            <input
-              type="text"
               value={searchFields.medicacoes || ''}
               onChange={(e) => handleSearchChange('medicacoes', e.target.value)}
               className="border rounded p-1 text-sm bg-[#fef3e2]"
@@ -380,70 +372,84 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
       )}
 
       {showAddForm && isEditing && (
-        <div className="mb-4 p-3 bg-gray-100 rounded-md">
-          <div className="grid grid-cols-7 gap-2 mb-2">
-            <div className="font-bold text-xs text-filemaker-text">NOME</div>
-            <div className="font-bold text-xs text-filemaker-text">DATA</div>
-            <div className="font-bold text-xs text-filemaker-text">DELTA T</div>
-            <div className="font-bold text-xs text-filemaker-text">PESO</div>
-            <div className="font-bold text-xs text-filemaker-text">DELTA PESO</div>
-            <div className="font-bold text-xs text-filemaker-text">EXAMES ALTERADOS</div>
-            <div className="font-bold text-xs text-filemaker-text">MEDICAÇÕES</div>
+        <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#f3f4f6', borderRadius: '6px', minWidth: '1130px' }}>
+          <div style={{ 
+            display: 'grid',
+            gridTemplateColumns: '180px 140px 100px 80px 100px 250px',
+            marginBottom: '8px'
+          }}>
+            <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: '#374151' }}>NOME</div>
+            <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: '#374151' }}>DATA</div>
+            <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: '#374151' }}>DELTA T</div>
+            <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: '#374151' }}>PESO</div>
+            <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: '#374151' }}>DELTA PESO</div>
+            <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 'bold', color: '#374151' }}>MEDICAÇÕES</div>
           </div>
-          <div className="grid grid-cols-7 gap-2">
-            <input
-              type="text"
-              value={newEvolucao.nome_paciente || pacienteNome}
-              onChange={(e) => setNewEvolucao({ ...newEvolucao, nome_paciente: e.target.value })}
-              className="border rounded p-1 text-sm"
-              readOnly={true} // Nome do paciente não deve ser editável
-              title="Nome do paciente obtido automaticamente"
-            />
-            <input
-              type="date"
-              value={newEvolucao.data_retorno}
-              onChange={(e) => setNewEvolucao({ ...newEvolucao, data_retorno: e.target.value })}
-              className="border rounded p-1 text-sm"
-            />
-            <input
-              type="text"
-              value={newEvolucao.delta_t}
-              onChange={(e) => setNewEvolucao({ ...newEvolucao, delta_t: e.target.value })}
-              className="border rounded p-1 text-sm"
-              placeholder="ex: 4 MESES"
-            />
-            <input
-              type="number"
-              value={newEvolucao.peso || ''}
-              onChange={(e) => setNewEvolucao({ ...newEvolucao, peso: parseFloat(e.target.value) })}
-              className="border rounded p-1 text-sm"
-              step="0.1"
-            />
-            <input
-              type="number"
-              value={newEvolucao.delta_peso || ''}
-              onChange={(e) => setNewEvolucao({ ...newEvolucao, delta_peso: parseFloat(e.target.value) })}
-              className="border rounded p-1 text-sm"
-              step="0.1"
-            />
-            <input
-              type="text"
-              value={newEvolucao.exames_alterados}
-              onChange={(e) => setNewEvolucao({ ...newEvolucao, exames_alterados: e.target.value })}
-              className="border rounded p-1 text-sm"
-            />
-            <input
-              type="text"
-              value={Array.isArray(newEvolucao.medicacoes) ? newEvolucao.medicacoes.join(', ') : ''}
-              onChange={(e) => setNewEvolucao({ ...newEvolucao, medicacoes: e.target.value.split(',').map(item => item.trim()) })}
-              className="border rounded p-1 text-sm"
-              placeholder="Separar por vírgulas"
-            />
+          <div style={{ 
+            display: 'grid',
+            gridTemplateColumns: '180px 140px 100px 80px 100px 250px'
+          }}>
+            <div style={{ padding: '0 12px' }}>
+              <input
+                type="text"
+                value={newEvolucao.nome_paciente || pacienteNome}
+                onChange={(e) => setNewEvolucao({ ...newEvolucao, nome_paciente: e.target.value })}
+                style={{ width: '100%', height: '32px', padding: '4px', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '4px', backgroundColor: '#f3f4f6' }}
+                readOnly={true}
+                title="Nome do paciente obtido automaticamente"
+              />
+            </div>
+            <div style={{ padding: '0 12px' }}>
+              <input
+                type="date"
+                value={newEvolucao.data_retorno}
+                onChange={(e) => setNewEvolucao({ ...newEvolucao, data_retorno: e.target.value })}
+                style={{ width: '100%', height: '32px', padding: '4px', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '4px' }}
+              />
+            </div>
+            <div style={{ padding: '0 12px' }}>
+              <input
+                type="text"
+                value={newEvolucao.delta_t}
+                onChange={(e) => setNewEvolucao({ ...newEvolucao, delta_t: e.target.value })}
+                style={{ width: '100%', height: '32px', padding: '4px', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                placeholder="ex: 4 MESES"
+              />
+            </div>
+            <div style={{ padding: '0 12px' }}>
+              <input
+                type="number"
+                value={newEvolucao.peso || ''}
+                onChange={(e) => setNewEvolucao({ ...newEvolucao, peso: parseFloat(e.target.value) })}
+                style={{ width: '100%', height: '32px', padding: '4px', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                step="0.1"
+              />
+            </div>
+            <div style={{ padding: '0 12px' }}>
+              <input
+                type="number"
+                value={newEvolucao.delta_peso || ''}
+                onChange={(e) => setNewEvolucao({ ...newEvolucao, delta_peso: parseFloat(e.target.value) })}
+                style={{ width: '100%', height: '32px', padding: '4px', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                step="0.1"
+              />
+            </div>
+            <div style={{ padding: '0 12px' }}>
+              <input
+                type="text"
+                value={Array.isArray(newEvolucao.medicacoes) ? newEvolucao.medicacoes.join(', ') : ''}
+                onChange={(e) => setNewEvolucao({ ...newEvolucao, medicacoes: e.target.value.split(',').map(item => item.trim()) })}
+                style={{ width: '100%', height: '32px', padding: '4px', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                placeholder="Separar por vírgulas"
+              />
+            </div>
           </div>
-          <div className="mt-2 text-right">
+          <div style={{ marginTop: '8px', textAlign: 'right' }}>
             <button
               onClick={handleCreateEvolucao}
-              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
+              style={{ backgroundColor: '#16a34a', color: 'white', padding: '4px 12px', borderRadius: '4px', fontSize: '0.875rem', border: 'none', cursor: 'pointer' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#15803d'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#16a34a'}
               disabled={isSaving}
             >
               Salvar
@@ -452,142 +458,144 @@ const EvolucaoCard: React.FC<EvolucaoCardProps> = ({
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white table-fixed">
-          <thead>
-            <tr className="bg-gray-100 border-b">
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '180px' }}>NOME</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '140px' }}>DATA</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '100px' }}>DELTA T</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '80px' }}>PESO</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '100px' }}>DELTA PESO</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '180px' }}>EXAMES ALTERADOS</th>
-              <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '200px' }}>MEDICAÇÕES</th>
-              {(isEditingLocal || !isSearchMode) && (
-                <th className="py-2 px-3 text-left text-xs font-medium text-filemaker-text" style={{ width: '80px' }}>AÇÕES</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {editedEvolucoes.length > 0 ? (
-              editedEvolucoes.map((evolucao, index) => (
-                <tr key={evolucao._id || index} className="border-b hover:bg-gray-50">
-                  <td className="py-2 px-3 text-sm">
-                    {isEditingLocal ? (
-                      <input
-                        type="text"
-                        value={evolucao.nome_paciente || pacienteNome || ''}
-                        onChange={(e) => handleInputChange(index, 'nome_paciente', e.target.value)}
-                        className="border rounded p-1 w-full text-sm"
-                        readOnly={true} // Nome do paciente não deve ser editável
-                        title="Nome do paciente obtido automaticamente"
-                      />
-                    ) : (
-                      evolucao.nome_paciente || pacienteNome || ''
-                    )}
-                  </td>
-                  <td className="py-2 px-3 text-sm">
-                    {isEditingLocal ? (
-                      <input
-                        type="date"
-                        value={toInputDateFormat(evolucao.data_retorno || '')}
-                        onChange={(e) => handleInputChange(index, 'data_retorno', e.target.value)}
-                        className="border rounded p-1 text-sm w-full"
-                      />
-                    ) : (
-                      formatDate(evolucao.data_retorno)
-                    )}
-                  </td>
-                  <td className="py-2 px-3 text-sm">
-                    {isEditingLocal ? (
-                      <input
-                        type="text"
-                        value={evolucao.delta_t || ''}
-                        onChange={(e) => handleInputChange(index, 'delta_t', e.target.value)}
-                        className="border rounded p-1 text-sm w-full"
-                      />
-                    ) : (
-                      evolucao.delta_t
-                    )}
-                  </td>
-                  <td className="py-2 px-3 text-sm">
-                    {isEditingLocal ? (
-                      <input
-                        type="number"
-                        value={evolucao.peso || ''}
-                        onChange={(e) => handleInputChange(index, 'peso', parseFloat(e.target.value))}
-                        className="border rounded p-1 text-sm w-full"
-                        step="0.1"
-                      />
-                    ) : (
-                      evolucao.peso
-                    )}
-                  </td>
-                  <td className="py-2 px-3 text-sm">
-                    {isEditingLocal ? (
-                      <input
-                        type="number"
-                        value={evolucao.delta_peso || ''}
-                        onChange={(e) => handleInputChange(index, 'delta_peso', parseFloat(e.target.value))}
-                        className="border rounded p-1 text-sm w-full"
-                        step="0.1"
-                      />
-                    ) : (
-                      evolucao.delta_peso
-                    )}
-                  </td>
-                  <td className="py-2 px-3 text-sm">
-                    {isEditingLocal ? (
-                      <input
-                        type="text"
-                        value={evolucao.exames_alterados || ''}
-                        onChange={(e) => handleInputChange(index, 'exames_alterados', e.target.value)}
-                        className="border rounded p-1 text-sm w-full"
-                      />
-                    ) : (
-                      evolucao.exames_alterados
-                    )}
-                  </td>
-                  <td className="py-2 px-3 text-sm">
-                    {isEditingLocal ? (
-                      <input
-                        type="text"
-                        value={Array.isArray(evolucao.medicacoes) ? evolucao.medicacoes.join(', ') : ''}
-                        onChange={(e) => handleInputChange(index, 'medicacoes', e.target.value.split(',').map(item => item.trim()))}
-                        className="border rounded p-1 text-sm w-full"
-                        placeholder="Separar por vírgulas"
-                      />
-                    ) : (
-                      Array.isArray(evolucao.medicacoes) ? evolucao.medicacoes.join(', ') : ''
-                    )}
-                  </td>
-                  {(isEditingLocal || !isSearchMode) && (
-                    <td className="py-2 px-3 text-sm">
-                      <div className="flex gap-1">
-                        {!isSearchMode && (
-                          <button
-                            onClick={() => handleDeleteEvolucao(evolucao._id || '', index)}
-                            className="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
-                            title="Deletar evolução"
-                            disabled={!evolucao._id}
-                          >
-                            <span>🗑️</span>
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={8} className="py-4 px-3 text-center text-gray-500">
-                  Nenhuma evolução encontrada
-                </td>
-              </tr>
+      <div style={{ overflowX: 'auto' }}>
+        <div style={{ 
+          minWidth: '1130px', 
+          maxWidth: '100%',
+          backgroundColor: 'white'
+        }}>
+          {/* Cabeçalho */}
+          <div style={{ 
+            display: 'grid',
+            gridTemplateColumns: '180px 140px 100px 80px 100px 250px 80px',
+            backgroundColor: '#f3f4f6',
+            borderBottom: '1px solid #e5e7eb'
+          }}>
+            <div style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 500, color: '#374151' }}>NOME</div>
+            <div style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 500, color: '#374151' }}>DATA</div>
+            <div style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 500, color: '#374151' }}>DELTA T</div>
+            <div style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 500, color: '#374151' }}>PESO</div>
+            <div style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 500, color: '#374151' }}>DELTA PESO</div>
+            <div style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 500, color: '#374151' }}>MEDICAÇÕES</div>
+            {(isEditingLocal || !isSearchMode) && (
+              <div style={{ padding: '8px 12px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 500, color: '#374151' }}>AÇÕES</div>
             )}
-          </tbody>
-        </table>
+          </div>
+
+          {/* Linhas */}
+          {editedEvolucoes.length > 0 ? (
+            editedEvolucoes.map((evolucao, index) => (
+              <div key={evolucao._id || index} style={{ 
+                display: 'grid',
+                gridTemplateColumns: '180px 140px 100px 80px 100px 250px 80px',
+                borderBottom: '1px solid #e5e7eb'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                <div style={{ padding: '8px 12px', fontSize: '0.875rem', overflow: 'hidden' }}>
+                  {isEditingLocal ? (
+                    <input
+                      type="text"
+                      value={evolucao.nome_paciente || pacienteNome || ''}
+                      onChange={(e) => handleInputChange(index, 'nome_paciente', e.target.value)}
+                      style={{ width: '100%', height: '32px', padding: '4px', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '4px', backgroundColor: '#f3f4f6' }}
+                      readOnly={true}
+                      title="Nome do paciente obtido automaticamente"
+                    />
+                  ) : (
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{evolucao.nome_paciente || pacienteNome || ''}</div>
+                  )}
+                </div>
+                <div style={{ padding: '8px 12px', fontSize: '0.875rem', overflow: 'hidden' }}>
+                  {isEditingLocal ? (
+                    <input
+                      type="date"
+                      value={toInputDateFormat(evolucao.data_retorno || '')}
+                      onChange={(e) => handleInputChange(index, 'data_retorno', e.target.value)}
+                      style={{ width: '100%', height: '32px', padding: '4px', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                    />
+                  ) : (
+                    formatDate(evolucao.data_retorno)
+                  )}
+                </div>
+                <div style={{ padding: '8px 12px', fontSize: '0.875rem', overflow: 'hidden' }}>
+                  {isEditingLocal ? (
+                    <input
+                      type="text"
+                      value={evolucao.delta_t || ''}
+                      onChange={(e) => handleInputChange(index, 'delta_t', e.target.value)}
+                      style={{ width: '100%', height: '32px', padding: '4px', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                    />
+                  ) : (
+                    evolucao.delta_t
+                  )}
+                </div>
+                <div style={{ padding: '8px 12px', fontSize: '0.875rem', overflow: 'hidden' }}>
+                  {isEditingLocal ? (
+                    <input
+                      type="number"
+                      value={evolucao.peso || ''}
+                      onChange={(e) => handleInputChange(index, 'peso', parseFloat(e.target.value))}
+                      style={{ width: '100%', height: '32px', padding: '4px', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                      step="0.1"
+                    />
+                  ) : (
+                    evolucao.peso
+                  )}
+                </div>
+                <div style={{ padding: '8px 12px', fontSize: '0.875rem', overflow: 'hidden' }}>
+                  {isEditingLocal ? (
+                    <input
+                      type="number"
+                      value={evolucao.delta_peso || ''}
+                      onChange={(e) => handleInputChange(index, 'delta_peso', parseFloat(e.target.value))}
+                      style={{ width: '100%', height: '32px', padding: '4px', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                      step="0.1"
+                    />
+                  ) : (
+                    evolucao.delta_peso
+                  )}
+                </div>
+                <div style={{ padding: '8px 12px', fontSize: '0.875rem', overflow: 'hidden' }}>
+                  {isEditingLocal ? (
+                    <input
+                      type="text"
+                      value={Array.isArray(evolucao.medicacoes) ? evolucao.medicacoes.join(', ') : ''}
+                      onChange={(e) => handleInputChange(index, 'medicacoes', e.target.value.split(',').map(item => item.trim()))}
+                      style={{ width: '100%', height: '32px', padding: '4px', fontSize: '0.875rem', border: '1px solid #d1d5db', borderRadius: '4px' }}
+                      placeholder="Separar por vírgulas"
+                    />
+                  ) : (
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{Array.isArray(evolucao.medicacoes) ? evolucao.medicacoes.join(', ') : ''}</div>
+                  )}
+                </div>
+                {(isEditingLocal || !isSearchMode) && (
+                  <div style={{ padding: '8px 12px', fontSize: '0.875rem' }}>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      {!isSearchMode && (
+                        <button
+                          onClick={() => handleDeleteEvolucao(evolucao._id || '', index)}
+                          style={{ color: '#ef4444', padding: '4px', borderRadius: '4px', cursor: 'pointer', border: 'none', background: 'transparent' }}
+                          onMouseEnter={(e) => e.currentTarget.style.color = '#b91c1c'}
+                          onMouseLeave={(e) => e.currentTarget.style.color = '#ef4444'}
+                          title="Deletar evolução"
+                          disabled={!evolucao._id}
+                        >
+                          <span>🗑️</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="py-4 px-3 text-center text-gray-500">
+              Nenhuma evolução encontrada
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

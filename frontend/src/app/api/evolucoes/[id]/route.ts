@@ -35,3 +35,33 @@ export async function PUT(
     return NextResponse.json({ error: 'Erro ao atualizar evolução' }, { status: 500 })
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
+
+    const response = await fetch(`${BACKEND_URL}/evolucoes/${params.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Erro ao deletar evolução:', errorText)
+      return NextResponse.json(
+        { error: 'Erro ao deletar evolução' },
+        { status: response.status }
+      )
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Erro ao deletar evolução:', error)
+    return NextResponse.json({ error: 'Erro ao deletar evolução' }, { status: 500 })
+  }
+}

@@ -7,6 +7,7 @@ import { Paciente } from '../types/paciente'
 import { applyHeightMask, applyWeightMask, calculateIMC, displayAltura, displayPeso, formatAltura, formatPeso, validateAltura, validatePeso } from "@/utils/formatters";
 import { fetchAddressByCep, formatCep, formatPhone, formatCellPhone, formatRG, formatCPF, formatEmail, validateEmail, validateAndFormatCPF } from '../utils/viaCep'
 import ConvenioSelect from './ConvenioSelect'
+import AudioRecorder from './AudioRecorder'
 import PlanoSelect from './PlanoSelect'
 import ProfissaoSelect from './ProfissaoSelect'
 import StatusSelect from './StatusSelect'
@@ -31,6 +32,8 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
   const [editedPaciente, setEditedPaciente] = useState<Partial<Paciente> | null>(null)
   const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false)
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false)
   const toast = useToast()
   
   // Atualizar state local quando prop mudar
@@ -235,6 +238,98 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
     }
     
     console.log('=== FIM DO PROCESSO DE SALVAMENTO ===');
+  }
+
+  const handleAudioRecording = async (audioBlob: Blob) => {
+    if (!paciente._id) {
+      toast.error('ID do paciente não encontrado')
+      return
+    }
+
+    setIsUploadingAudio(true)
+    const token = localStorage.getItem('token')
+
+    try {
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'recording.webm')
+
+      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}/hma/audio`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        toast.success('Áudio enviado com sucesso!')
+        
+        // Atualizar transcrição no estado usando handleInputChange para garantir que salve
+        handleInputChange('hma_transcricao', result.transcricao)
+        handleInputChange('hma_audio_url', result.audioUrl)
+        
+        // Também atualizar o paciente local
+        setPaciente({
+          ...paciente,
+          hma_transcricao: result.transcricao,
+          hma_audio_url: result.audioUrl
+        })
+      } else {
+        const error = await response.text()
+        toast.error(`Erro ao enviar áudio: ${error}`)
+      }
+    } catch (error: any) {
+      console.error('Erro ao enviar áudio:', error)
+      toast.error(`Erro ao enviar áudio: ${error.message}`)
+    } finally {
+      setIsUploadingAudio(false)
+    }
+  }
+
+  const handlePdfUpload = async (file: File) => {
+    if (!paciente._id) {
+      toast.error('ID do paciente não encontrado')
+      return
+    }
+
+    setIsUploadingPdf(true)
+    const token = localStorage.getItem('token')
+
+    try {
+      const formData = new FormData()
+      formData.append('pdf', file)
+
+      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}/hma/pdf`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        toast.success('PDF enviado com sucesso!')
+        
+        // Atualizar PDF no estado usando handleInputChange para garantir que salve
+        handleInputChange('hma_resumo_pdf', result.filename)
+        
+        // Também atualizar o paciente local
+        setPaciente({
+          ...paciente,
+          hma_resumo_pdf: result.filename
+        })
+      } else {
+        const error = await response.text()
+        toast.error(`Erro ao enviar PDF: ${error}`)
+      }
+    } catch (error: any) {
+      console.error('Erro ao enviar PDF:', error)
+      toast.error(`Erro ao enviar PDF: ${error.message}`)
+    } finally {
+      setIsUploadingPdf(false)
+    }
   }
 
   const calculateAge = (birthDate: string): number => {
@@ -973,15 +1068,100 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
 
       {/* Clinical Data and Antecedents - Only show in normal mode */}
       {!isSearchMode && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+          {/* HMA Section */}
+          <div className="md:col-span-1 xl:col-span-1">
+            <div className="filemaker-section">
+              <h3 className="text-sm font-semibold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">
+                HMA
+              </h3>
+              <div className="space-y-3">
+                {/* Gravação de Áudio */}
+                <div>
+                  <label className="block text-xs text-filemaker-text mb-1">GRAVAÇÃO</label>
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <AudioRecorder
+                      onRecordingComplete={handleAudioRecording}
+                      disabled={!isEditing || isUploadingAudio}
+                    />
+                    {isUploadingAudio && (
+                      <span className="text-xs text-blue-600">Enviando áudio...</span>
+                    )}
+                    <input
+                      type="text"
+                      className={`flex-1 min-w-0 px-2 py-1 text-sm rounded border ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-100 cursor-not-allowed border-gray-200'}`}
+                      placeholder="Transcrição do áudio aparecerá aqui..."
+                      readOnly={!isEditing}
+                      value={(isEditing ? (editedPaciente?.hma_transcricao || '') : (paciente.hma_transcricao || '')) || ''}
+                      onChange={(e) => handleInputChange('hma_transcricao', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Upload de PDF do Resumo */}
+                <div>
+                  <label className="block text-xs text-filemaker-text mb-1">RESUMO DO HMA (PDF)</label>
+                  <div className="space-y-2">
+                    {isEditing && (
+                      <div className="w-full">
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          disabled={isUploadingPdf}
+                          className="w-full text-xs file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-filemaker-blue file:text-white hover:file:bg-blue-700 file:cursor-pointer disabled:opacity-50"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                              handlePdfUpload(file)
+                              e.target.value = '' // Reset input
+                            }
+                          }}
+                        />
+                        {isUploadingPdf && (
+                          <span className="text-xs text-blue-600">Enviando PDF...</span>
+                        )}
+                      </div>
+                    )}
+                    {(isEditing ? editedPaciente?.hma_resumo_pdf : paciente.hma_resumo_pdf) && (
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gray-50 p-2 rounded border border-gray-200 gap-2">
+                        <span className="text-xs text-gray-700 truncate flex-1 min-w-0">
+                          📄 {isEditing ? editedPaciente?.hma_resumo_pdf : paciente.hma_resumo_pdf}
+                        </span>
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            type="button"
+                            className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 whitespace-nowrap"
+                            title="Visualizar PDF"
+                          >
+                            👁️ Ver
+                          </button>
+                          {isEditing && (
+                            <button
+                              type="button"
+                              className="text-red-600 hover:text-red-800 text-xs px-2 py-1 whitespace-nowrap"
+                              title="Remover PDF"
+                              onClick={() => handleInputChange('hma_resumo_pdf', '')}
+                            >
+                              🗑️ Remover
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Clinical Evaluation */}
-          <div className="lg:col-span-4">
+          <div className="md:col-span-1 xl:col-span-1">
             <div className="filemaker-section">
               <h3 className="text-sm font-semibold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">
                 AVALIAÇÃO CLÍNICA
               </h3>
               <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
                     <label className="block text-xs text-filemaker-text mb-1">PESO</label>
                     <div className="flex items-stretch">
@@ -1151,7 +1331,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                   </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <label className="flex items-center space-x-2">
                   <input 
                     type="checkbox" 
@@ -1249,7 +1429,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
         </div>
 
         {/* Antecedents */}
-        <div className="lg:col-span-4">
+        <div className="md:col-span-2 xl:col-span-1">
           <div className="filemaker-section">
             <h3 className="text-sm font-semibold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">
               ANTECEDENTES
@@ -1260,7 +1440,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                   <h4 className="text-xs font-medium text-filemaker-text mb-1 uppercase">
                     ANTECEDENTE {tipo === 'tios' ? 'TIOS' : tipo === 'avos' ? 'AVÓS' : tipo}
                   </h4>
-                  <div className="grid grid-cols-3 gap-1 text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1 text-xs">
                     <label className="flex items-center space-x-1">
                       <input 
                         type="checkbox" 

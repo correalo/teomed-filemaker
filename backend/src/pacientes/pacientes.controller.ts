@@ -1,7 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { PacientesService } from './pacientes.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 
 @ApiTags('pacientes')
 @ApiBearerAuth()
@@ -133,5 +136,83 @@ export class PacientesController {
   @ApiResponse({ status: 404, description: 'Paciente não encontrado' })
   remove(@Param('id') id: string) {
     return this.pacientesService.remove(id);
+  }
+
+  @Post(':id/hma/audio')
+  @UseInterceptors(FileInterceptor('audio', {
+    storage: diskStorage({
+      destination: './uploads/hma/audio',
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `hma-${uniqueSuffix}${extname(file.originalname)}`);
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      if (!file.mimetype.match(/\/(wav|mp3|m4a|webm|ogg)$/)) {
+        return cb(new Error('Apenas arquivos de áudio são permitidos!'), false);
+      }
+      cb(null, true);
+    },
+    limits: {
+      fileSize: 50 * 1024 * 1024, // 50MB
+    },
+  }))
+  @ApiOperation({ summary: 'Upload de áudio HMA', description: 'Faz upload do áudio da HMA e retorna a transcrição' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        audio: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiParam({ name: 'id', description: 'ID do paciente' })
+  @ApiResponse({ status: 200, description: 'Áudio enviado e transcrito com sucesso' })
+  @ApiResponse({ status: 404, description: 'Paciente não encontrado' })
+  async uploadHmaAudio(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+    return this.pacientesService.uploadHmaAudio(id, file);
+  }
+
+  @Post(':id/hma/pdf')
+  @UseInterceptors(FileInterceptor('pdf', {
+    storage: diskStorage({
+      destination: './uploads/hma/pdf',
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `hma-resumo-${uniqueSuffix}${extname(file.originalname)}`);
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype !== 'application/pdf') {
+        return cb(new Error('Apenas arquivos PDF são permitidos!'), false);
+      }
+      cb(null, true);
+    },
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB
+    },
+  }))
+  @ApiOperation({ summary: 'Upload de PDF resumo HMA', description: 'Faz upload do PDF do resumo da HMA' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        pdf: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiParam({ name: 'id', description: 'ID do paciente' })
+  @ApiResponse({ status: 200, description: 'PDF enviado com sucesso' })
+  @ApiResponse({ status: 404, description: 'Paciente não encontrado' })
+  async uploadHmaPdf(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+    return this.pacientesService.uploadHmaPdf(id, file);
   }
 }

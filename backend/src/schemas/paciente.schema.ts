@@ -245,6 +245,15 @@ export class Paciente {
 
   @Prop({ type: DadosClinicos })
   dados_clinicos: DadosClinicos;
+
+  @Prop()
+  hma_transcricao: string;
+
+  @Prop()
+  hma_audio_url: string;
+
+  @Prop()
+  hma_resumo_pdf: string;
 }
 
 export const PacienteSchema = SchemaFactory.createForClass(Paciente);

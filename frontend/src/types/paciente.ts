@@ -98,6 +98,8 @@ export interface Paciente {
   cirurgia: Cirurgia;
   antecedentes: Antecedentes;
   dados_clinicos: DadosClinicos;
+  hma_transcricao?: string;
+  hma_resumo_pdf?: string;
   criadoEm: string;
   atualizadoEm: string;
 }

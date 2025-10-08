@@ -258,4 +258,47 @@ export class PacientesService {
   async remove(id: string): Promise<Paciente> {
     return this.pacienteModel.findByIdAndDelete(id).exec();
   }
+
+  async uploadHmaAudio(id: string, file: any): Promise<any> {
+    const paciente = await this.pacienteModel.findById(id);
+    if (!paciente) {
+      throw new Error('Paciente não encontrado');
+    }
+
+    const audioUrl = `/uploads/hma/audio/${file.filename}`;
+    
+    // TODO: Implementar transcrição com Whisper API
+    // Por enquanto, retornamos apenas a URL do áudio
+    const transcricao = 'Transcrição será implementada com Whisper API';
+
+    await this.pacienteModel.findByIdAndUpdate(id, {
+      hma_audio_url: audioUrl,
+      hma_transcricao: transcricao,
+    });
+
+    return {
+      audioUrl,
+      transcricao,
+      message: 'Áudio enviado com sucesso. Transcrição em processamento.',
+    };
+  }
+
+  async uploadHmaPdf(id: string, file: any): Promise<any> {
+    const paciente = await this.pacienteModel.findById(id);
+    if (!paciente) {
+      throw new Error('Paciente não encontrado');
+    }
+
+    const pdfUrl = `/uploads/hma/pdf/${file.filename}`;
+
+    await this.pacienteModel.findByIdAndUpdate(id, {
+      hma_resumo_pdf: file.filename,
+    });
+
+    return {
+      pdfUrl,
+      filename: file.filename,
+      message: 'PDF enviado com sucesso',
+    };
+  }
 }
