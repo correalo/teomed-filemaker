@@ -1068,9 +1068,9 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
 
       {/* Clinical Data and Antecedents - Only show in normal mode */}
       {!isSearchMode && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* HMA Section */}
-          <div className="md:col-span-1 xl:col-span-1">
+          <div className="lg:col-span-1">
             <div className="filemaker-section">
               <h3 className="text-sm font-semibold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">
                 HMA
@@ -1155,7 +1155,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
           </div>
 
           {/* Clinical Evaluation */}
-          <div className="md:col-span-1 xl:col-span-1">
+          <div className="lg:col-span-1">
             <div className="filemaker-section">
               <h3 className="text-sm font-semibold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">
                 AVALIAÇÃO CLÍNICA
@@ -1429,7 +1429,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
         </div>
 
         {/* Antecedents */}
-        <div className="md:col-span-2 xl:col-span-1">
+        <div className="lg:col-span-1">
           <div className="filemaker-section">
             <h3 className="text-sm font-semibold mb-3 bg-filemaker-blue text-white px-2 py-1 rounded">
               ANTECEDENTES
