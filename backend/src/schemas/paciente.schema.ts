@@ -250,7 +250,13 @@ export class Paciente {
   hma_transcricao: string;
 
   @Prop()
-  hma_audio_url: string;
+  hma_audio_data: string; // Base64 do arquivo de áudio
+
+  @Prop()
+  hma_audio_type: string; // Tipo MIME (audio/mp3, audio/wav, audio/webm)
+
+  @Prop()
+  hma_audio_filename: string; // Nome original do arquivo
 
   @Prop()
   hma_resumo_pdf: string;

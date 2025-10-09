@@ -265,21 +265,30 @@ export class PacientesService {
       throw new Error('Paciente não encontrado');
     }
 
-    const audioUrl = `/uploads/hma/audio/${file.filename}`;
+    // Ler o arquivo e converter para base64
+    const fs = require('fs');
+    const audioBuffer = fs.readFileSync(file.path);
+    const audioBase64 = audioBuffer.toString('base64');
     
     // TODO: Implementar transcrição com Whisper API
-    // Por enquanto, retornamos apenas a URL do áudio
     const transcricao = 'Transcrição será implementada com Whisper API';
 
     await this.pacienteModel.findByIdAndUpdate(id, {
-      hma_audio_url: audioUrl,
+      hma_audio_data: audioBase64,
+      hma_audio_type: file.mimetype,
+      hma_audio_filename: file.originalname,
       hma_transcricao: transcricao,
     });
 
+    // Remover arquivo temporário após salvar no banco
+    fs.unlinkSync(file.path);
+
     return {
-      audioUrl,
+      audioData: audioBase64,
+      audioType: file.mimetype,
+      audioFilename: file.originalname,
       transcricao,
-      message: 'Áudio enviado com sucesso. Transcrição em processamento.',
+      message: 'Áudio salvo com sucesso no banco de dados.',
     };
   }
 

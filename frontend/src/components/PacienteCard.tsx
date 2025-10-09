@@ -264,17 +264,21 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
 
       if (response.ok) {
         const result = await response.json()
-        toast.success('Áudio enviado com sucesso!')
+        toast.success('Áudio salvo com sucesso!')
         
-        // Atualizar transcrição no estado usando handleInputChange para garantir que salve
+        // Atualizar dados do áudio no estado
         handleInputChange('hma_transcricao', result.transcricao)
-        handleInputChange('hma_audio_url', result.audioUrl)
+        handleInputChange('hma_audio_data', result.audioData)
+        handleInputChange('hma_audio_type', result.audioType)
+        handleInputChange('hma_audio_filename', result.audioFilename)
         
         // Também atualizar o paciente local
         setPaciente({
           ...paciente,
           hma_transcricao: result.transcricao,
-          hma_audio_url: result.audioUrl
+          hma_audio_data: result.audioData,
+          hma_audio_type: result.audioType,
+          hma_audio_filename: result.audioFilename
         })
       } else {
         const error = await response.text()
@@ -1099,10 +1103,18 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                       />
                     </div>
                     {/* Player de Áudio */}
-                    {(isEditing ? editedPaciente?.hma_audio_url : paciente.hma_audio_url) && (
+                    {(isEditing ? editedPaciente?.hma_audio_data : paciente.hma_audio_data) && (
                       <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs text-gray-600">
+                            🎵 {isEditing ? editedPaciente?.hma_audio_filename : paciente.hma_audio_filename}
+                          </span>
+                        </div>
                         <audio controls className="w-full" style={{height: '32px'}}>
-                          <source src={`http://localhost:3004${isEditing ? editedPaciente?.hma_audio_url : paciente.hma_audio_url}`} type="audio/webm" />
+                          <source 
+                            src={`data:${isEditing ? editedPaciente?.hma_audio_type : paciente.hma_audio_type};base64,${isEditing ? editedPaciente?.hma_audio_data : paciente.hma_audio_data}`} 
+                            type={isEditing ? editedPaciente?.hma_audio_type : paciente.hma_audio_type} 
+                          />
                           Seu navegador não suporta o elemento de áudio.
                         </audio>
                       </div>
