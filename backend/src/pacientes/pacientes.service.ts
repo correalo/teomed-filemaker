@@ -265,9 +265,28 @@ export class PacientesService {
       throw new Error('Paciente não encontrado');
     }
 
-    // Ler o arquivo e converter para base64
     const fs = require('fs');
-    const audioBuffer = fs.readFileSync(file.path);
+    const path = require('path');
+    const ffmpeg = require('fluent-ffmpeg');
+    const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+    ffmpeg.setFfmpegPath(ffmpegPath);
+
+    // Criar nome do arquivo MP3
+    const mp3Filename = `${path.basename(file.filename, path.extname(file.filename))}.mp3`;
+    const mp3Path = path.join(path.dirname(file.path), mp3Filename);
+
+    // Converter para MP3
+    await new Promise((resolve, reject) => {
+      ffmpeg(file.path)
+        .toFormat('mp3')
+        .audioBitrate('128k')
+        .on('end', resolve)
+        .on('error', reject)
+        .save(mp3Path);
+    });
+
+    // Ler arquivo MP3 e converter para base64
+    const audioBuffer = fs.readFileSync(mp3Path);
     const audioBase64 = audioBuffer.toString('base64');
     
     // TODO: Implementar transcrição com Whisper API
@@ -275,20 +294,21 @@ export class PacientesService {
 
     await this.pacienteModel.findByIdAndUpdate(id, {
       hma_audio_data: audioBase64,
-      hma_audio_type: file.mimetype,
-      hma_audio_filename: file.originalname,
+      hma_audio_type: 'audio/mp3',
+      hma_audio_filename: mp3Filename,
       hma_transcricao: transcricao,
     });
 
-    // Remover arquivo temporário após salvar no banco
+    // Remover arquivos temporários
     fs.unlinkSync(file.path);
+    fs.unlinkSync(mp3Path);
 
     return {
       audioData: audioBase64,
-      audioType: file.mimetype,
-      audioFilename: file.originalname,
+      audioType: 'audio/mp3',
+      audioFilename: mp3Filename,
       transcricao,
-      message: 'Áudio salvo com sucesso no banco de dados.',
+      message: 'Áudio convertido para MP3 e salvo com sucesso.',
     };
   }
 
