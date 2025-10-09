@@ -264,7 +264,13 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
 
       if (response.ok) {
         const result = await response.json()
-        toast.success('Áudio salvo com sucesso!')
+        console.log('Áudio recebido:', {
+          filename: result.audioFilename,
+          type: result.audioType,
+          dataLength: result.audioData?.length
+        })
+        
+        toast.success('Áudio convertido para MP3 e salvo!')
         
         // Atualizar dados do áudio no estado
         handleInputChange('hma_transcricao', result.transcricao)
@@ -1103,22 +1109,30 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                       />
                     </div>
                     {/* Player de Áudio */}
-                    {(isEditing ? editedPaciente?.hma_audio_data : paciente.hma_audio_data) && (
-                      <div className="bg-gray-50 p-2 rounded border border-gray-200">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs text-gray-600">
-                            🎵 {isEditing ? editedPaciente?.hma_audio_filename : paciente.hma_audio_filename}
-                          </span>
+                    {(isEditing ? editedPaciente?.hma_audio_data : paciente.hma_audio_data) && (() => {
+                      const audioData = isEditing ? editedPaciente?.hma_audio_data : paciente.hma_audio_data;
+                      const audioType = isEditing ? editedPaciente?.hma_audio_type : paciente.hma_audio_type;
+                      const audioFilename = isEditing ? editedPaciente?.hma_audio_filename : paciente.hma_audio_filename;
+                      
+                      console.log('Renderizando player:', { audioFilename, audioType, hasData: !!audioData });
+                      
+                      return (
+                        <div className="bg-gray-50 p-2 rounded border border-gray-200">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs text-gray-600">
+                              🎵 {audioFilename || 'audio.mp3'}
+                            </span>
+                          </div>
+                          <audio controls className="w-full" style={{height: '32px'}} key={audioFilename}>
+                            <source 
+                              src={`data:${audioType || 'audio/mp3'};base64,${audioData}`} 
+                              type={audioType || 'audio/mp3'} 
+                            />
+                            Seu navegador não suporta o elemento de áudio.
+                          </audio>
                         </div>
-                        <audio controls className="w-full" style={{height: '32px'}}>
-                          <source 
-                            src={`data:${isEditing ? editedPaciente?.hma_audio_type : paciente.hma_audio_type};base64,${isEditing ? editedPaciente?.hma_audio_data : paciente.hma_audio_data}`} 
-                            type={isEditing ? editedPaciente?.hma_audio_type : paciente.hma_audio_type} 
-                          />
-                          Seu navegador não suporta o elemento de áudio.
-                        </audio>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
 
