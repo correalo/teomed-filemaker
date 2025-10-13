@@ -42,6 +42,16 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
     setPaciente(pacienteProp)
   }, [pacienteProp])
   
+  // Log para debug quando paciente mudar
+  useEffect(() => {
+    console.log('Paciente atualizado:', {
+      nome: paciente.nome,
+      hasAudio: !!paciente.hma_audio_data,
+      audioFilename: paciente.hma_audio_filename,
+      transcricao: paciente.hma_transcricao?.substring(0, 50)
+    });
+  }, [paciente])
+  
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR })
@@ -172,7 +182,13 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
       },
       cirurgia: {
         ...(editedPaciente.cirurgia || {})
-      }
+      },
+      // Garantir que dados do áudio HMA sejam incluídos
+      hma_transcricao: editedPaciente.hma_transcricao,
+      hma_audio_data: editedPaciente.hma_audio_data,
+      hma_audio_type: editedPaciente.hma_audio_type,
+      hma_audio_filename: editedPaciente.hma_audio_filename,
+      hma_resumo_pdf: editedPaciente.hma_resumo_pdf,
     };
     
     console.log('Dados preparados para salvar:', JSON.stringify(pacienteToSave, null, 2));
@@ -264,27 +280,30 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
 
       if (response.ok) {
         const result = await response.json()
-        console.log('Áudio recebido:', {
+        console.log('✅ Áudio recebido:', {
           filename: result.audioFilename,
           type: result.audioType,
+          transcricao: result.transcricao,
           dataLength: result.audioData?.length
         })
         
-        toast.success('Áudio convertido para MP3 e salvo!')
+        toast.success('Áudio transcrito com sucesso!')
         
         // Atualizar dados do áudio no estado
-        handleInputChange('hma_transcricao', result.transcricao)
-        handleInputChange('hma_audio_data', result.audioData)
-        handleInputChange('hma_audio_type', result.audioType)
-        handleInputChange('hma_audio_filename', result.audioFilename)
+        const audioType = result.audioType || 'audio/mp3';
+        
+        handleInputChange('hma_transcricao', result.transcricao || '')
+        handleInputChange('hma_audio_data', result.audioData || '')
+        handleInputChange('hma_audio_type', audioType)
+        handleInputChange('hma_audio_filename', result.audioFilename || '')
         
         // Também atualizar o paciente local
         setPaciente({
           ...paciente,
-          hma_transcricao: result.transcricao,
-          hma_audio_data: result.audioData,
-          hma_audio_type: result.audioType,
-          hma_audio_filename: result.audioFilename
+          hma_transcricao: result.transcricao || '',
+          hma_audio_data: result.audioData || '',
+          hma_audio_type: audioType,
+          hma_audio_filename: result.audioFilename || ''
         })
       } else {
         const error = await response.text()
@@ -1089,24 +1108,16 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
               <div className="space-y-3">
                 {/* Gravação de Áudio */}
                 <div>
-                  <label className="block text-xs text-filemaker-text mb-1">GRAVAÇÃO</label>
+                  <label className="block text-xs text-filemaker-text mb-1">GRAVAÇÃO DE ÁUDIO</label>
                   <div className="space-y-2">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <div className="flex items-center gap-2">
                       <AudioRecorder
                         onRecordingComplete={handleAudioRecording}
                         disabled={!isEditing || isUploadingAudio}
                       />
                       {isUploadingAudio && (
-                        <span className="text-xs text-blue-600">Enviando áudio...</span>
+                        <span className="text-xs text-blue-600">Transcrevendo...</span>
                       )}
-                      <input
-                        type="text"
-                        className={`flex-1 min-w-0 px-2 py-1 text-sm rounded border ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-100 cursor-not-allowed border-gray-200'}`}
-                        placeholder="Transcrição do áudio aparecerá aqui..."
-                        readOnly={!isEditing}
-                        value={(isEditing ? (editedPaciente?.hma_transcricao || '') : (paciente.hma_transcricao || '')) || ''}
-                        onChange={(e) => handleInputChange('hma_transcricao', e.target.value)}
-                      />
                     </div>
                     {/* Player de Áudio */}
                     {(isEditing ? editedPaciente?.hma_audio_data : paciente.hma_audio_data) && (() => {
@@ -1114,7 +1125,17 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                       const audioType = isEditing ? editedPaciente?.hma_audio_type : paciente.hma_audio_type;
                       const audioFilename = isEditing ? editedPaciente?.hma_audio_filename : paciente.hma_audio_filename;
                       
-                      console.log('Renderizando player:', { audioFilename, audioType, hasData: !!audioData });
+                      // Criar URL única com hash dos primeiros 100 chars do base64 para forçar reload
+                      const audioHash = audioData?.substring(0, 100) || '';
+                      const uniqueKey = `${audioFilename}-${audioHash.length}`;
+                      
+                      console.log('Renderizando player:', { 
+                        audioFilename, 
+                        audioType, 
+                        hasData: !!audioData,
+                        dataLength: audioData?.length,
+                        uniqueKey 
+                      });
                       
                       return (
                         <div className="bg-gray-50 p-2 rounded border border-gray-200">
@@ -1123,17 +1144,52 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                               🎵 {audioFilename || 'audio.mp3'}
                             </span>
                           </div>
-                          <audio controls className="w-full" style={{height: '32px'}} key={audioFilename}>
-                            <source 
-                              src={`data:${audioType || 'audio/mp3'};base64,${audioData}`} 
-                              type={audioType || 'audio/mp3'} 
-                            />
+                          <audio 
+                            controls 
+                            className="w-full" 
+                            style={{height: '32px'}} 
+                            key={uniqueKey}
+                            src={`data:${audioType || 'audio/mp3'};base64,${audioData}`}
+                          >
                             Seu navegador não suporta o elemento de áudio.
                           </audio>
                         </div>
                       );
                     })()}
                   </div>
+                </div>
+
+                {/* Transcrição */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs text-filemaker-text">TRANSCRIÇÃO</label>
+                    {(isEditing ? editedPaciente?.hma_transcricao : paciente.hma_transcricao) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const transcricao = isEditing ? editedPaciente?.hma_transcricao : paciente.hma_transcricao;
+                          const blob = new Blob([transcricao || ''], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `transcricao-hma-${paciente.nome}.txt`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                          toast.success('Transcrição baixada!');
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                      >
+                        📄 Baixar TXT
+                      </button>
+                    )}
+                  </div>
+                  <textarea
+                    className={`w-full px-2 py-2 text-sm rounded border min-h-[100px] ${isEditing ? 'bg-white border-gray-300' : 'bg-gray-100 cursor-not-allowed border-gray-200'}`}
+                    placeholder="A transcrição do áudio aparecerá aqui automaticamente..."
+                    readOnly={!isEditing}
+                    value={(isEditing ? (editedPaciente?.hma_transcricao || '') : (paciente.hma_transcricao || ''))}
+                    onChange={(e) => handleInputChange('hma_transcricao', e.target.value)}
+                  />
                 </div>
 
                 {/* Upload de PDF do Resumo */}

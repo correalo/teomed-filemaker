@@ -269,6 +269,8 @@ export class PacientesService {
     const path = require('path');
     const ffmpeg = require('fluent-ffmpeg');
     const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+    const OpenAI = require('openai').default;
+    
     ffmpeg.setFfmpegPath(ffmpegPath);
 
     // Criar nome do arquivo MP3
@@ -276,27 +278,86 @@ export class PacientesService {
     const mp3Path = path.join(path.dirname(file.path), mp3Filename);
 
     // Converter para MP3
-    await new Promise((resolve, reject) => {
-      ffmpeg(file.path)
-        .toFormat('mp3')
-        .audioBitrate('128k')
-        .on('end', resolve)
-        .on('error', reject)
-        .save(mp3Path);
-    });
+    try {
+      await new Promise((resolve, reject) => {
+        ffmpeg(file.path)
+          .toFormat('mp3')
+          .audioBitrate('128k')
+          .on('end', () => {
+            console.log('✅ Conversão MP3 concluída');
+            resolve(true);
+          })
+          .on('error', (err) => {
+            console.error('❌ Erro na conversão MP3:', err.message);
+            reject(err);
+          })
+          .save(mp3Path);
+      });
+    } catch (error) {
+      console.error('❌ Erro ao converter áudio para MP3:', error.message);
+      // Limpar arquivo temporário
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+      throw new Error('Arquivo de áudio inválido ou corrompido. Tente gravar novamente.');
+    }
+
+    // Transcrever com OpenAI Whisper API
+    let transcricao = '';
+    try {
+      const apiKey = process.env.OPENAI_API_KEY;
+      console.log('🔑 Chave OpenAI configurada:', apiKey ? 'Sim (primeiros 10 chars: ' + apiKey.substring(0, 10) + '...)' : 'NÃO');
+      
+      if (!apiKey) {
+        throw new Error('OPENAI_API_KEY não configurada no arquivo .env');
+      }
+
+      const openai = new OpenAI({
+        apiKey: apiKey,
+      });
+
+      console.log('📤 Enviando áudio para OpenAI Whisper API...');
+      const transcription = await openai.audio.transcriptions.create({
+        file: fs.createReadStream(mp3Path),
+        model: 'whisper-1',
+        language: 'pt',
+        response_format: 'text',
+      });
+
+      transcricao = transcription;
+      console.log('✅ Transcrição realizada com sucesso:', transcricao.substring(0, 100));
+    } catch (error) {
+      console.error('❌ Erro ao transcrever áudio:', error.message);
+      console.error('Stack:', error.stack);
+      transcricao = `Erro ao transcrever: ${error.message}`;
+    }
 
     // Ler arquivo MP3 e converter para base64
     const audioBuffer = fs.readFileSync(mp3Path);
     const audioBase64 = audioBuffer.toString('base64');
-    
-    // TODO: Implementar transcrição com Whisper API
-    const transcricao = 'Transcrição será implementada com Whisper API';
 
-    await this.pacienteModel.findByIdAndUpdate(id, {
-      hma_audio_data: audioBase64,
-      hma_audio_type: 'audio/mp3',
-      hma_audio_filename: mp3Filename,
-      hma_transcricao: transcricao,
+    console.log('💾 Salvando no banco:', {
+      filename: mp3Filename,
+      type: 'audio/mp3',
+      transcricaoLength: transcricao.length,
+      audioDataLength: audioBase64.length
+    });
+    
+    const updated = await this.pacienteModel.findByIdAndUpdate(
+      id, 
+      {
+        hma_audio_data: audioBase64,
+        hma_audio_type: 'audio/mp3',
+        hma_audio_filename: mp3Filename,
+        hma_transcricao: transcricao,
+      },
+      { new: true }
+    );
+    
+    console.log('✅ Salvo no banco:', {
+      filename: updated.hma_audio_filename,
+      type: updated.hma_audio_type,
+      transcricao: updated.hma_transcricao?.substring(0, 50)
     });
 
     // Remover arquivos temporários
@@ -308,7 +369,7 @@ export class PacientesService {
       audioType: 'audio/mp3',
       audioFilename: mp3Filename,
       transcricao,
-      message: 'Áudio convertido para MP3 e salvo com sucesso.',
+      message: 'Áudio convertido para MP3 e transcrito com sucesso.',
     };
   }
 
