@@ -250,13 +250,31 @@ export class Paciente {
   hma_transcricao: string;
 
   @Prop()
-  hma_audio_data: string; // Base64 do arquivo de áudio
+  hma_audio_data: string; // Base64 do arquivo de áudio (DEPRECATED - usar hma_audios)
 
   @Prop()
-  hma_audio_type: string; // Tipo MIME (audio/mp3, audio/wav, audio/webm)
+  hma_audio_type: string; // Tipo MIME (DEPRECATED)
 
   @Prop()
-  hma_audio_filename: string; // Nome original do arquivo
+  hma_audio_filename: string; // Nome original (DEPRECATED)
+
+  @Prop({
+    type: [{
+      filename: String,
+      url: String,
+      transcricao: String,
+      duracao: Number,
+      data_gravacao: Date,
+    }],
+    default: []
+  })
+  hma_audios: Array<{
+    filename: string;
+    url: string;
+    transcricao: string;
+    duracao?: number;
+    data_gravacao: Date;
+  }>;
 
   @Prop()
   hma_resumo_pdf: string;

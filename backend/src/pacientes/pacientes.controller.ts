@@ -177,6 +177,16 @@ export class PacientesController {
     return this.pacientesService.uploadHmaAudio(id, file);
   }
 
+  @Delete(':id/hma/audio/:filename')
+  @ApiOperation({ summary: 'Deletar áudio HMA', description: 'Remove um áudio específico da HMA' })
+  @ApiParam({ name: 'id', description: 'ID do paciente' })
+  @ApiParam({ name: 'filename', description: 'Nome do arquivo de áudio' })
+  @ApiResponse({ status: 200, description: 'Áudio deletado com sucesso' })
+  @ApiResponse({ status: 404, description: 'Paciente não encontrado' })
+  async deleteHmaAudio(@Param('id') id: string, @Param('filename') filename: string) {
+    return this.pacientesService.deleteHmaAudio(id, filename);
+  }
+
   @Post(':id/hma/pdf')
   @UseInterceptors(FileInterceptor('pdf', {
     storage: diskStorage({

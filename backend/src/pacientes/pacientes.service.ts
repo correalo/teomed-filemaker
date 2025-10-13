@@ -332,44 +332,82 @@ export class PacientesService {
       transcricao = `Erro ao transcrever: ${error.message}`;
     }
 
-    // Ler arquivo MP3 e converter para base64
-    const audioBuffer = fs.readFileSync(mp3Path);
-    const audioBase64 = audioBuffer.toString('base64');
+    // Manter arquivo MP3 no servidor (não converter para base64)
+    const audioUrl = `/uploads/hma/audio/${mp3Filename}`;
 
     console.log('💾 Salvando no banco:', {
       filename: mp3Filename,
-      type: 'audio/mp3',
-      transcricaoLength: transcricao.length,
-      audioDataLength: audioBase64.length
+      url: audioUrl,
+      transcricaoLength: transcricao.length
+    });
+    
+    // Adicionar novo áudio ao array hma_audios
+    const pacienteAtualizado = await this.pacienteModel.findById(id);
+    const audios = pacienteAtualizado.hma_audios || [];
+    
+    audios.push({
+      filename: mp3Filename,
+      url: audioUrl,
+      transcricao: transcricao,
+      data_gravacao: new Date(),
     });
     
     const updated = await this.pacienteModel.findByIdAndUpdate(
       id, 
       {
-        hma_audio_data: audioBase64,
-        hma_audio_type: 'audio/mp3',
-        hma_audio_filename: mp3Filename,
-        hma_transcricao: transcricao,
+        hma_audios: audios,
       },
       { new: true }
     );
     
     console.log('✅ Salvo no banco:', {
-      filename: updated.hma_audio_filename,
-      type: updated.hma_audio_type,
-      transcricao: updated.hma_transcricao?.substring(0, 50)
+      filename: mp3Filename,
+      url: audioUrl,
+      totalAudios: audios.length,
+      transcricao: transcricao?.substring(0, 50)
     });
 
-    // Remover arquivos temporários
+    // Remover apenas arquivo WebM temporário
     fs.unlinkSync(file.path);
-    fs.unlinkSync(mp3Path);
 
     return {
-      audioData: audioBase64,
-      audioType: 'audio/mp3',
+      audioUrl,
       audioFilename: mp3Filename,
       transcricao,
+      audios: updated.hma_audios,
       message: 'Áudio convertido para MP3 e transcrito com sucesso.',
+    };
+  }
+
+  async deleteHmaAudio(id: string, audioFilename: string): Promise<any> {
+    const paciente = await this.pacienteModel.findById(id);
+    if (!paciente) {
+      throw new Error('Paciente não encontrado');
+    }
+
+    const fs = require('fs');
+    const path = require('path');
+
+    // Remover áudio do array
+    const audios = (paciente.hma_audios || []).filter(
+      audio => audio.filename !== audioFilename
+    );
+
+    // Deletar arquivo físico
+    const audioPath = path.join(__dirname, '../../uploads/hma/audio', audioFilename);
+    if (fs.existsSync(audioPath)) {
+      fs.unlinkSync(audioPath);
+      console.log('🗑️ Arquivo deletado:', audioPath);
+    }
+
+    // Atualizar banco
+    await this.pacienteModel.findByIdAndUpdate(id, {
+      hma_audios: audios,
+    });
+
+    return {
+      message: 'Áudio deletado com sucesso',
+      audios,
     };
   }
 

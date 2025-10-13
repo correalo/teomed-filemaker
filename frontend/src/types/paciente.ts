@@ -99,9 +99,16 @@ export interface Paciente {
   antecedentes: Antecedentes;
   dados_clinicos: DadosClinicos;
   hma_transcricao?: string;
-  hma_audio_data?: string;
-  hma_audio_type?: string;
-  hma_audio_filename?: string;
+  hma_audio_data?: string; // DEPRECATED
+  hma_audio_type?: string; // DEPRECATED
+  hma_audio_filename?: string; // DEPRECATED
+  hma_audios?: Array<{
+    filename: string;
+    url: string;
+    transcricao: string;
+    duracao?: number;
+    data_gravacao: string;
+  }>;
   hma_resumo_pdf?: string;
   criadoEm: string;
   atualizadoEm: string;
