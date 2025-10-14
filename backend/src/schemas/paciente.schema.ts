@@ -241,6 +241,24 @@ export class DadosClinicos {
   medicacoes_preop: string[];
 }
 
+@Schema()
+export class Retorno {
+  @Prop()
+  tipo: string; // '7 DIAS', '30 DIAS', 'EXAMES 3 MESES', etc.
+
+  @Prop()
+  data_prevista: Date;
+
+  @Prop()
+  data_realizada: Date;
+
+  @Prop({ default: false })
+  realizado: boolean;
+
+  @Prop()
+  observacoes: string;
+}
+
 @Schema({ timestamps: { createdAt: 'criadoEm', updatedAt: 'atualizadoEm' } })
 export class Paciente {
   @Prop({ required: true })
@@ -323,6 +341,24 @@ export class Paciente {
 
   @Prop()
   hma_resumo_pdf: string;
+
+  @Prop({
+    type: [{
+      tipo: String,
+      data_prevista: Date,
+      data_realizada: Date,
+      realizado: { type: Boolean, default: false },
+      observacoes: String,
+    }],
+    default: []
+  })
+  retornos: Array<{
+    tipo: string;
+    data_prevista: Date;
+    data_realizada?: Date;
+    realizado: boolean;
+    observacoes?: string;
+  }>;
 }
 
 export const PacienteSchema = SchemaFactory.createForClass(Paciente);

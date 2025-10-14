@@ -95,6 +95,14 @@ export interface DadosClinicos {
   medicacoes_preop: string[];
 }
 
+export interface Retorno {
+  tipo: string;
+  data_prevista: string;
+  data_realizada?: string;
+  realizado: boolean;
+  observacoes?: string;
+}
+
 export interface Paciente {
   _id: string;
   nome: string;
@@ -125,6 +133,7 @@ export interface Paciente {
     data_gravacao: string;
   }>;
   hma_resumo_pdf?: string;
+  retornos?: Retorno[];
   criadoEm: string;
   atualizadoEm: string;
 }

@@ -12,6 +12,7 @@ import { useReceitas } from '../hooks/useReceitas'
 import { useExame } from '../hooks/useExames'
 import { Evolucao, EvolucaoSearchFields } from '../types/evolucao'
 import { formatDate } from '../utils/formatters'
+import RetornosSection from './RetornosSection'
 
 // Importar PDFViewer dinamicamente para evitar SSR
 const PDFViewer = dynamic(() => import('./PDFViewer'), { ssr: false })
@@ -163,6 +164,27 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
 
   // Removed API calls for non-existent endpoints (evolucoes, avaliacoes, exames-preop)
   // These modules were removed from the backend
+
+  // Query para dados do paciente
+  const { data: pacienteData, refetch: refetchPaciente } = useQuery({
+    queryKey: ['paciente', pacienteId],
+    queryFn: async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const response = await fetch(`http://localhost:3004/pacientes/${pacienteId}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar paciente: ${response.status}`);
+      }
+      
+      return await response.json();
+    },
+    enabled: !!pacienteId
+  })
 
   // Query para evoluções
   const { data: evolucoesFetched, refetch: refetchEvolucoes } = useQuery({
@@ -985,23 +1007,58 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
     switch (activeTab) {
       case 'evolucoes':
         return (
-          <div className="bg-white border border-gray-300">
-            {/* Header com título e botões */}
-            <div className="bg-filemaker-blue text-white px-3 py-2 flex justify-between items-center">
-              <h3 className="text-sm font-bold">EVOLUÇÃO</h3>
-              <div className="flex gap-1">
-                {!isSearchMode && (
-                  <button
-                    onClick={() => setShowAddForm(!showAddForm)}
-                    className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
-                    disabled={isSaving}
-                    title="Criar nova evolução"
-                  >
-                    ➕
-                  </button>
-                )}
+          <div className="space-y-4">
+            {/* Seção de Retornos */}
+            {pacienteData && (
+              <RetornosSection
+                pacienteId={pacienteId}
+                retornos={pacienteData.retornos || []}
+                dataCirurgia={pacienteData.cirurgia?.data}
+                onUpdate={async (novosRetornos) => {
+                  try {
+                    const token = localStorage.getItem('token')
+                    const response = await fetch(`http://localhost:3004/pacientes/${pacienteId}`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                      },
+                      body: JSON.stringify({
+                        ...pacienteData,
+                        retornos: novosRetornos
+                      })
+                    })
+                    
+                    if (response.ok) {
+                      await refetchPaciente()
+                      toast.success('Retornos atualizados!')
+                    }
+                  } catch (error) {
+                    console.error('Erro ao atualizar retornos:', error)
+                    toast.error('Erro ao atualizar retornos')
+                  }
+                }}
+                isEditing={true}
+              />
+            )}
+
+            <div className="bg-white border border-gray-300">
+              {/* Header com título e botões */}
+              <div className="bg-filemaker-blue text-white px-3 py-2 flex justify-between items-center">
+                <h3 className="text-sm font-bold">EVOLUÇÃO</h3>
+                <div className="flex gap-1">
+                  {!isSearchMode && (
+                    <button
+                      onClick={() => setShowAddForm(!showAddForm)}
+                      className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                      disabled={isSaving}
+                      title="Criar nova evolução"
+                    >
+                      ➕
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
             {/* Header das colunas - Apenas desktop */}
             <div className="hidden lg:block bg-gray-100 border-b border-gray-300 overflow-x-auto">
@@ -1287,6 +1344,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                 </div>
               )}
             </div>
+          </div>
           </div>
         )
 
