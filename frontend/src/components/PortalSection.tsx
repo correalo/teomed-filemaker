@@ -689,6 +689,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
 
   const tabs = [
     { id: 'evolucoes', label: 'EVOLUÇÕES', color: 'bg-filemaker-blue' },
+    { id: 'retornos', label: 'DATAS DE RETORNO', color: 'bg-purple-600' },
     { id: 'avaliacoes', label: 'AVALIAÇÕES', color: 'bg-filemaker-green' },
     { id: 'exames', label: 'EXAMES PRÉ-OP', color: 'bg-black' },
     { id: 'receitas', label: 'RECEITAS', color: 'bg-filemaker-red' },
@@ -1007,42 +1008,7 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
     switch (activeTab) {
       case 'evolucoes':
         return (
-          <div className="space-y-4">
-            {/* Seção de Retornos */}
-            {pacienteData && (
-              <RetornosSection
-                pacienteId={pacienteId}
-                retornos={pacienteData.retornos || []}
-                dataCirurgia={pacienteData.cirurgia?.data}
-                onUpdate={async (novosRetornos) => {
-                  try {
-                    const token = localStorage.getItem('token')
-                    const response = await fetch(`http://localhost:3004/pacientes/${pacienteId}`, {
-                      method: 'PUT',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                      },
-                      body: JSON.stringify({
-                        ...pacienteData,
-                        retornos: novosRetornos
-                      })
-                    })
-                    
-                    if (response.ok) {
-                      await refetchPaciente()
-                      toast.success('Retornos atualizados!')
-                    }
-                  } catch (error) {
-                    console.error('Erro ao atualizar retornos:', error)
-                    toast.error('Erro ao atualizar retornos')
-                  }
-                }}
-                isEditing={true}
-              />
-            )}
-
-            <div className="bg-white border border-gray-300">
+          <div className="bg-white border border-gray-300">
               {/* Header com título e botões */}
               <div className="bg-filemaker-blue text-white px-3 py-2 flex justify-between items-center">
                 <h3 className="text-sm font-bold">EVOLUÇÃO</h3>
@@ -1345,6 +1311,44 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
               )}
             </div>
           </div>
+          </div>
+        )
+
+      case 'retornos':
+        return (
+          <div className="bg-white border border-gray-300">
+            {pacienteData && (
+              <RetornosSection
+                pacienteId={pacienteId}
+                retornos={pacienteData.retornos || []}
+                dataCirurgia={pacienteData.cirurgia?.data}
+                onUpdate={async (novosRetornos) => {
+                  try {
+                    const token = localStorage.getItem('token')
+                    const response = await fetch(`http://localhost:3004/pacientes/${pacienteId}`, {
+                      method: 'PUT',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                      },
+                      body: JSON.stringify({
+                        ...pacienteData,
+                        retornos: novosRetornos
+                      })
+                    })
+                    
+                    if (response.ok) {
+                      await refetchPaciente()
+                      toast.success('Retornos atualizados!')
+                    }
+                  } catch (error) {
+                    console.error('Erro ao atualizar retornos:', error)
+                    toast.error('Erro ao atualizar retornos')
+                  }
+                }}
+                isEditing={true}
+              />
+            )}
           </div>
         )
 
