@@ -178,6 +178,51 @@ export class DadosClinicos {
   hernia_incisional: boolean;
 
   @Prop()
+  ico: boolean;
+
+  @Prop()
+  iam: boolean;
+
+  @Prop()
+  icc: boolean;
+
+  @Prop()
+  avc: boolean;
+
+  @Prop()
+  fa: boolean;
+
+  @Prop()
+  cardiomiopatia_dilatada: boolean;
+
+  @Prop()
+  asma: boolean;
+
+  @Prop()
+  incontinencia_urinaria_feminina: boolean;
+
+  @Prop()
+  infertilidade: boolean;
+
+  @Prop()
+  ovario_policistico: boolean;
+
+  @Prop()
+  hemorroidas: boolean;
+
+  @Prop()
+  varizes_mmii: boolean;
+
+  @Prop()
+  hipertensao_intracraniana_idiopatica: boolean;
+
+  @Prop()
+  depressao: boolean;
+
+  @Prop()
+  estigma_social: boolean;
+
+  @Prop()
   tireoide: string;
 
   @Prop()

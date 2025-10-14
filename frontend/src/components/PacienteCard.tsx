@@ -954,8 +954,8 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
         </div>
 
         {/* Linha 2: Convênio e Documentos */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-12 gap-3 sm:gap-4">
-          <div className="md:col-span-2 lg:col-span-3 relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-12 xl:grid-cols-12 gap-3 sm:gap-4">
+          <div className="md:col-span-2 lg:col-span-3 xl:col-span-2 relative">
             <label className="block text-xs font-medium text-filemaker-text mb-1">CONVÊNIO</label>
             {isEditing && !isSearchMode ? (
               <ConvenioSelect
@@ -985,7 +985,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
               />
             )}
           </div>
-          <div className="md:col-span-1 lg:col-span-2">
+          <div className="md:col-span-1 lg:col-span-2 xl:col-span-2">
             <label className="block text-xs font-medium text-filemaker-text mb-1">STATUS</label>
             <StatusSelect
               value={isSearchMode ? (searchFields.status || '') : (currentData?.status || '')}
@@ -1003,7 +1003,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
               style={{ backgroundColor: isSearchMode ? '#fef3e2' : isEditing ? '#fff' : '#f9f9f9' }}
             />
           </div>
-          <div className="md:col-span-2 lg:col-span-3">
+          <div className="md:col-span-2 lg:col-span-3 xl:col-span-2">
             <label className="block text-xs font-medium text-filemaker-text mb-1">CARTEIRINHA</label>
             <input
               type="text"
@@ -1021,7 +1021,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
               placeholder={isSearchMode ? "Buscar por carteirinha..." : ""}
             />
           </div>
-          <div className="md:col-span-1 lg:col-span-2">
+          <div className="md:col-span-1 lg:col-span-2 xl:col-span-2">
             <label className="block text-xs font-medium text-filemaker-text mb-1">PLANO</label>
             {isEditing && !isSearchMode ? (
               <PlanoSelect
@@ -1051,7 +1051,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
               />
             )}
           </div>
-          <div className="sm:col-span-1 md:col-span-1 lg:col-span-2">
+          <div className="sm:col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2">
             <label className="block text-xs font-medium text-filemaker-text mb-1">RG</label>
             <input
               type="text"
@@ -1073,7 +1073,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
               maxLength={12}
             />
           </div>
-          <div className="sm:col-span-1 md:col-span-1 lg:col-span-2">
+          <div className="sm:col-span-1 md:col-span-1 lg:col-span-2 xl:col-span-2">
             <label className="block text-xs font-medium text-filemaker-text mb-1">CPF</label>
             <CPFInput
               value={isSearchMode ? (searchFields.cpf || '') : (currentData?.documentos?.cpf || '')}
@@ -1505,6 +1505,141 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                     onChange={(e) => handleInputChange('dados_clinicos.hernia_incisional', e.target.checked)}
                   />
                   <span>HÉRNIA INCISIONAL</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.ico || false) : (paciente.dados_clinicos?.ico || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.ico', e.target.checked)}
+                  />
+                  <span>ICO</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.iam || false) : (paciente.dados_clinicos?.iam || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.iam', e.target.checked)}
+                  />
+                  <span>IAM</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.icc || false) : (paciente.dados_clinicos?.icc || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.icc', e.target.checked)}
+                  />
+                  <span>ICC</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.avc || false) : (paciente.dados_clinicos?.avc || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.avc', e.target.checked)}
+                  />
+                  <span>AVC</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.fa || false) : (paciente.dados_clinicos?.fa || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.fa', e.target.checked)}
+                  />
+                  <span>FA</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.cardiomiopatia_dilatada || false) : (paciente.dados_clinicos?.cardiomiopatia_dilatada || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.cardiomiopatia_dilatada', e.target.checked)}
+                  />
+                  <span>CARDIOMIOPATIA DILATADA</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.asma || false) : (paciente.dados_clinicos?.asma || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.asma', e.target.checked)}
+                  />
+                  <span>ASMA</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.varizes_mmii || false) : (paciente.dados_clinicos?.varizes_mmii || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.varizes_mmii', e.target.checked)}
+                  />
+                  <span>VARIZES DE MMII</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.infertilidade || false) : (paciente.dados_clinicos?.infertilidade || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.infertilidade', e.target.checked)}
+                  />
+                  <span>INFERTILIDADE</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.ovario_policistico || false) : (paciente.dados_clinicos?.ovario_policistico || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.ovario_policistico', e.target.checked)}
+                  />
+                  <span>OVÁRIO POLICÍSTICO</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.hemorroidas || false) : (paciente.dados_clinicos?.hemorroidas || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.hemorroidas', e.target.checked)}
+                  />
+                  <span>HEMORRÓIDAS</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.incontinencia_urinaria_feminina || false) : (paciente.dados_clinicos?.incontinencia_urinaria_feminina || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.incontinencia_urinaria_feminina', e.target.checked)}
+                  />
+                  <span>INCONTINÊNCIA URINÁRIA FEMININA</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.depressao || false) : (paciente.dados_clinicos?.depressao || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.depressao', e.target.checked)}
+                  />
+                  <span>DEPRESSÃO</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.hipertensao_intracraniana_idiopatica || false) : (paciente.dados_clinicos?.hipertensao_intracraniana_idiopatica || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.hipertensao_intracraniana_idiopatica', e.target.checked)}
+                  />
+                  <span>HIPERTENSÃO INTRACRANIANA IDIOPÁTICA</span>
+                </label>
+                <label className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    checked={isEditing ? (editedPaciente?.dados_clinicos?.estigma_social || false) : (paciente.dados_clinicos?.estigma_social || false)} 
+                    disabled={!isEditing}
+                    onChange={(e) => handleInputChange('dados_clinicos.estigma_social', e.target.checked)}
+                  />
+                  <span>ESTIGMA SOCIAL</span>
                 </label>
               </div>
               
