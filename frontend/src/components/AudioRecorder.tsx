@@ -5,13 +5,16 @@ import React, { useState, useRef } from 'react'
 interface AudioRecorderProps {
   onRecordingComplete: (audioBlob: Blob) => void
   onTranscriptionReceived?: (transcription: string) => void
+  onAutoFillRequest?: (audioBlob: Blob) => Promise<void>
   disabled?: boolean
 }
 
-export default function AudioRecorder({ onRecordingComplete, onTranscriptionReceived, disabled = false }: AudioRecorderProps) {
+export default function AudioRecorder({ onRecordingComplete, onTranscriptionReceived, onAutoFillRequest, disabled = false }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
   const [recordingTime, setRecordingTime] = useState(0)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [lastRecordedBlob, setLastRecordedBlob] = useState<Blob | null>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<NodeJS.Timeout | null>(null)
@@ -31,6 +34,7 @@ export default function AudioRecorder({ onRecordingComplete, onTranscriptionRece
 
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' })
+        setLastRecordedBlob(audioBlob)
         onRecordingComplete(audioBlob)
         stream.getTracks().forEach(track => track.stop())
       }
@@ -83,18 +87,57 @@ export default function AudioRecorder({ onRecordingComplete, onTranscriptionRece
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
+  const handleAutoFill = async () => {
+    if (!lastRecordedBlob || !onAutoFillRequest) return
+    
+    setIsProcessing(true)
+    try {
+      await onAutoFillRequest(lastRecordedBlob)
+    } catch (error) {
+      console.error('Erro ao processar áudio:', error)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 flex-wrap">
       {!isRecording ? (
-        <button
-          type="button"
-          onClick={startRecording}
-          disabled={disabled}
-          className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-          title="Iniciar gravação"
-        >
-          🎤
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={startRecording}
+            disabled={disabled}
+            className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+            title="Iniciar gravação"
+          >
+            🎤
+          </button>
+          
+          {lastRecordedBlob && onAutoFillRequest && (
+            <button
+              type="button"
+              onClick={handleAutoFill}
+              disabled={isProcessing || disabled}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              title="Preencher CRM automaticamente com IA"
+            >
+              {isProcessing ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processando...
+                </>
+              ) : (
+                <>
+                  ✨ Preencher Automático
+                </>
+              )}
+            </button>
+          )}
+        </>
       ) : (
         <>
           <button

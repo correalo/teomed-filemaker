@@ -3,12 +3,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { PacientesController } from './pacientes.controller';
 import { PacientesService } from './pacientes.service';
 import { Paciente, PacienteSchema } from '../schemas/paciente.schema';
+import { OpenAIModule } from '../openai/openai.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Paciente.name, schema: PacienteSchema },
     ]),
+    OpenAIModule,
   ],
   controllers: [PacientesController],
   providers: [PacientesService],

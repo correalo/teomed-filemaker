@@ -3,11 +3,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Paciente, PacienteDocument } from '../schemas/paciente.schema';
+import { OpenAIService } from '../openai/openai.service';
 
 @Injectable()
 export class PacientesService {
   constructor(
     @InjectModel(Paciente.name) private pacienteModel: Model<PacienteDocument>,
+    private readonly openaiService: OpenAIService,
   ) {}
 
   async findAll(page: number = 1, limit: number = 10, filters?: any): Promise<{ pacientes: Paciente[]; total: number; totalPages: number }> {
@@ -428,5 +430,101 @@ export class PacientesService {
       filename: file.filename,
       message: 'PDF enviado com sucesso',
     };
+  }
+
+  /**
+   * Processa áudio e extrai dados estruturados automaticamente
+   */
+  async processAudioAndExtractData(id: string, file: any): Promise<any> {
+    const paciente = await this.pacienteModel.findById(id);
+    if (!paciente) {
+      throw new Error('Paciente não encontrado');
+    }
+
+    const audioPath = file.path;
+    console.log('🎙️ Processando áudio:', audioPath);
+
+    try {
+      // 1. Transcrever e extrair dados usando OpenAI
+      const { transcription, extractedData } = await this.openaiService.processAudioToStructuredData(audioPath);
+
+      console.log('✅ Transcrição completa');
+      console.log('✅ Dados extraídos:', JSON.stringify(extractedData, null, 2));
+
+      // 2. Salvar áudio no array de áudios
+      const audioUrl = `/uploads/hma/audio/${file.filename}`;
+      const audioData = {
+        filename: file.filename,
+        url: audioUrl,
+        transcricao: transcription,
+        duracao: 0, // Pode ser calculado se necessário
+        data_gravacao: new Date(),
+      };
+
+      // 3. Preparar dados para atualização do paciente
+      const updateData: any = {
+        $push: { hma_audios: audioData },
+        hma_transcricao: transcription,
+      };
+
+      // 4. Mesclar dados extraídos com dados existentes (sem sobrescrever)
+      if (extractedData.dados_pessoais) {
+        if (extractedData.dados_pessoais.nome && !paciente.nome) {
+          updateData.nome = extractedData.dados_pessoais.nome;
+        }
+        if (extractedData.dados_pessoais.idade && !paciente.idade) {
+          updateData.idade = parseInt(extractedData.dados_pessoais.idade);
+        }
+        if (extractedData.dados_pessoais.sexo && !paciente.sexo) {
+          updateData.sexo = extractedData.dados_pessoais.sexo;
+        }
+        if (extractedData.dados_pessoais.profissao && !paciente.profissao) {
+          updateData.profissao = extractedData.dados_pessoais.profissao;
+        }
+      }
+
+      // 5. Atualizar dados clínicos (mesclar com existentes)
+      if (extractedData.dados_clinicos) {
+        const dadosClinicosAtuais = paciente.dados_clinicos || {};
+        updateData.dados_clinicos = {
+          ...dadosClinicosAtuais,
+          ...extractedData.dados_clinicos,
+        };
+      }
+
+      // 6. Atualizar antecedentes (mesclar com existentes)
+      if (extractedData.antecedentes) {
+        const antecedentesAtuais = paciente.antecedentes || {};
+        updateData.antecedentes = {
+          paterno: { ...(antecedentesAtuais.paterno || {}), ...(extractedData.antecedentes.paterno || {}) },
+          materno: { ...(antecedentesAtuais.materno || {}), ...(extractedData.antecedentes.materno || {}) },
+          tios: { ...(antecedentesAtuais.tios || {}), ...(extractedData.antecedentes.tios || {}) },
+          avos: { ...(antecedentesAtuais.avos || {}), ...(extractedData.antecedentes.avos || {}) },
+        };
+      }
+
+      // 7. Atualizar paciente no banco
+      const pacienteAtualizado = await this.pacienteModel.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true }
+      );
+
+      return {
+        message: 'Áudio processado e dados extraídos com sucesso',
+        transcription,
+        extractedData,
+        audioUrl,
+        paciente: pacienteAtualizado,
+      };
+    } catch (error) {
+      console.error('❌ Erro ao processar áudio:', error);
+      // Deletar arquivo em caso de erro
+      const fs = require('fs');
+      if (fs.existsSync(audioPath)) {
+        fs.unlinkSync(audioPath);
+      }
+      throw error;
+    }
   }
 }

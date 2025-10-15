@@ -187,6 +187,48 @@ export class PacientesController {
     return this.pacientesService.deleteHmaAudio(id, filename);
   }
 
+  @Post(':id/hma/audio/process')
+  @UseInterceptors(FileInterceptor('audio', {
+    storage: diskStorage({
+      destination: './uploads/hma/audio',
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, `hma-${uniqueSuffix}${extname(file.originalname)}`);
+      },
+    }),
+    fileFilter: (req, file, cb) => {
+      if (!file.mimetype.match(/\/(wav|mp3|m4a|webm|ogg)$/)) {
+        return cb(new Error('Apenas arquivos de áudio são permitidos!'), false);
+      }
+      cb(null, true);
+    },
+    limits: {
+      fileSize: 50 * 1024 * 1024, // 50MB
+    },
+  }))
+  @ApiOperation({ 
+    summary: 'Processar áudio e extrair dados', 
+    description: 'Transcreve áudio usando Whisper e extrai dados estruturados usando GPT para preencher automaticamente o CRM' 
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        audio: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
+  })
+  @ApiParam({ name: 'id', description: 'ID do paciente' })
+  @ApiResponse({ status: 200, description: 'Áudio processado e dados extraídos com sucesso' })
+  @ApiResponse({ status: 404, description: 'Paciente não encontrado' })
+  async processAudioAndExtractData(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+    return this.pacientesService.processAudioAndExtractData(id, file);
+  }
+
   @Post(':id/hma/pdf')
   @UseInterceptors(FileInterceptor('pdf', {
     storage: diskStorage({

@@ -317,6 +317,53 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
     }
   }
 
+  const handleAutoFillFromAudio = async (audioBlob: Blob) => {
+    if (!paciente._id) {
+      toast.error('ID do paciente não encontrado')
+      return
+    }
+
+    toast.info('🤖 Processando áudio com IA...')
+    const token = localStorage.getItem('token')
+
+    try {
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'recording.webm')
+
+      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}/hma/audio/process`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('✅ Dados extraídos:', result.extractedData)
+        
+        toast.success('✨ CRM preenchido automaticamente!')
+        
+        // Atualizar paciente com dados extraídos
+        if (result.paciente) {
+          setPaciente(result.paciente)
+          setEditedPaciente(result.paciente)
+        }
+        
+        // Recarregar página para mostrar dados atualizados
+        setTimeout(() => {
+          window.location.reload()
+        }, 1500)
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }))
+        toast.error(`Erro ao processar: ${errorData.message}`)
+      }
+    } catch (error: any) {
+      console.error('Erro ao processar áudio:', error)
+      toast.error(`Erro: ${error.message}`)
+    }
+  }
+
   const handlePdfUpload = async (file: File) => {
     if (!paciente._id) {
       toast.error('ID do paciente não encontrado')
@@ -1113,6 +1160,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                     <div className="flex items-center gap-2">
                       <AudioRecorder
                         onRecordingComplete={handleAudioRecording}
+                        onAutoFillRequest={handleAutoFillFromAudio}
                         disabled={!isEditing || isUploadingAudio}
                       />
                       {isUploadingAudio && (
