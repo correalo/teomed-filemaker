@@ -154,9 +154,18 @@ Seja preciso e não invente dados.`,
 
 IMPORTANTE:
 - Para campos booleanos (true/false), marque true APENAS se a condição for EXPLICITAMENTE mencionada
-- Para peso e altura, extraia apenas números (ex: "85.2" para peso, "1.78" para altura)
-- Para medicações e exames, retorne como array de strings
+- Para peso, extraia apenas números sem unidade (ex: "85.2" para "85.2 quilos" ou "85.2 kg")
+- Para altura, extraia em metros com ponto decimal (ex: "1.78" para "1 metro e 78" ou "178 cm")
+- Para medicações, retorne array de strings (ex: ["Metformina 850mg", "Losartana 50mg"])
+- Para exames, retorne array de strings (ex: ["Hemograma", "Glicemia"])
 - A transcrição completa deve ir no campo "hma.transcricao"
+- Identifique sinônimos: "hipertensão" = "has", "pressão alta" = "has", "açúcar no sangue" = "diabetes"
+
+EXEMPLOS DE EXTRAÇÃO:
+- "peso 95 quilos" → peso: "95"
+- "1 metro e 60" → altura: "1.60"
+- "tem diabetes" → diabetes: true
+- "usa metformina" → medicacoes_preop: ["Metformina"]
 
 Texto da consulta:
 ${transcription}`,
@@ -166,12 +175,16 @@ ${transcription}`,
 
       const extractedData = JSON.parse(completion.choices[0].message.content);
       
+      console.log('📊 Dados extraídos pelo GPT:', JSON.stringify(extractedData, null, 2));
+      
       // Calcular IMC se peso e altura estiverem presentes
       if (extractedData.dados_clinicos?.peso && extractedData.dados_clinicos?.altura) {
         const peso = parseFloat(extractedData.dados_clinicos.peso);
         const altura = parseFloat(extractedData.dados_clinicos.altura);
+        console.log(`🧮 Calculando IMC: peso=${peso}, altura=${altura}`);
         if (!isNaN(peso) && !isNaN(altura) && altura > 0) {
           extractedData.dados_clinicos.imc = (peso / (altura * altura)).toFixed(2);
+          console.log(`✅ IMC calculado: ${extractedData.dados_clinicos.imc}`);
         }
       }
 

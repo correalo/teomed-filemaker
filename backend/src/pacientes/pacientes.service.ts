@@ -467,13 +467,16 @@ export class PacientesService {
         data_gravacao: new Date(),
       };
 
-      // 3. Preparar dados para atualização do paciente
-      const updateData: any = {
+      // 3. Adicionar áudio ao array
+      await this.pacienteModel.findByIdAndUpdate(id, {
         $push: { hma_audios: audioData },
         hma_transcricao: transcription,
-      };
+      });
 
-      // 4. Mesclar dados extraídos com dados existentes (sem sobrescrever)
+      // 4. Preparar dados para atualização do paciente
+      const updateData: any = {};
+
+      // 5. Mesclar dados extraídos com dados existentes
       if (extractedData.dados_pessoais) {
         if (extractedData.dados_pessoais.nome && !paciente.nome) {
           updateData.nome = extractedData.dados_pessoais.nome;
@@ -489,16 +492,17 @@ export class PacientesService {
         }
       }
 
-      // 5. Atualizar dados clínicos (mesclar com existentes)
+      // 6. Atualizar dados clínicos (SEMPRE atualizar, não apenas se vazio)
       if (extractedData.dados_clinicos) {
         const dadosClinicosAtuais = paciente.dados_clinicos || {};
         updateData.dados_clinicos = {
           ...dadosClinicosAtuais,
           ...extractedData.dados_clinicos,
         };
+        console.log('💊 Dados clínicos a serem atualizados:', updateData.dados_clinicos);
       }
 
-      // 6. Atualizar antecedentes (mesclar com existentes)
+      // 7. Atualizar antecedentes (mesclar com existentes)
       if (extractedData.antecedentes) {
         const antecedentesAtuais: any = paciente.antecedentes || {};
         updateData.antecedentes = {
@@ -509,12 +513,32 @@ export class PacientesService {
         };
       }
 
-      // 7. Atualizar paciente no banco
+      // 8. Atualizar HMA se houver
+      if (extractedData.hma) {
+        updateData.hma = extractedData.hma;
+      }
+
+      // 9. Atualizar diagnóstico e conduta se houver
+      if (extractedData.diagnostico) {
+        updateData.diagnostico = extractedData.diagnostico;
+      }
+      if (extractedData.conduta) {
+        updateData.conduta = extractedData.conduta;
+      }
+      if (extractedData.exames_solicitados) {
+        updateData.exames_solicitados = extractedData.exames_solicitados;
+      }
+
+      console.log('📝 Dados a serem atualizados:', JSON.stringify(updateData, null, 2));
+
+      // 10. Atualizar paciente no banco
       const pacienteAtualizado = await this.pacienteModel.findByIdAndUpdate(
         id,
         updateData,
         { new: true }
       );
+
+      console.log('✅ Paciente atualizado com sucesso');
 
       return {
         message: 'Áudio processado e dados extraídos com sucesso',
