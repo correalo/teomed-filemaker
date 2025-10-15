@@ -494,7 +494,7 @@ export class PacientesService {
 
       // 6. Atualizar antecedentes (mesclar com existentes)
       if (extractedData.antecedentes) {
-        const antecedentesAtuais = paciente.antecedentes || {};
+        const antecedentesAtuais: any = paciente.antecedentes || {};
         updateData.antecedentes = {
           paterno: { ...(antecedentesAtuais.paterno || {}), ...(extractedData.antecedentes.paterno || {}) },
           materno: { ...(antecedentesAtuais.materno || {}), ...(extractedData.antecedentes.materno || {}) },
