@@ -436,16 +436,22 @@ export class PacientesService {
    * Processa áudio e extrai dados estruturados automaticamente
    */
   async processAudioAndExtractData(id: string, file: any): Promise<any> {
+    console.log('🎯 Iniciando processamento de áudio para paciente:', id);
+    console.log('📁 Arquivo recebido:', file);
+    
     const paciente = await this.pacienteModel.findById(id);
     if (!paciente) {
+      console.error('❌ Paciente não encontrado:', id);
       throw new Error('Paciente não encontrado');
     }
 
     const audioPath = file.path;
     console.log('🎙️ Processando áudio:', audioPath);
+    console.log('📊 Tamanho do arquivo:', file.size, 'bytes');
 
     try {
       // 1. Transcrever e extrair dados usando OpenAI
+      console.log('🤖 Chamando OpenAI Service...');
       const { transcription, extractedData } = await this.openaiService.processAudioToStructuredData(audioPath);
 
       console.log('✅ Transcrição completa');

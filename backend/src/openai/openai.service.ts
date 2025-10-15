@@ -24,17 +24,36 @@ export class OpenAIService {
    * Transcreve um arquivo de áudio usando Whisper
    */
   async transcribeAudio(audioPath: string): Promise<string> {
+    console.log('🎤 Iniciando transcrição do áudio:', audioPath);
+    
     try {
+      // Verificar se o arquivo existe
+      if (!fs.existsSync(audioPath)) {
+        console.error('❌ Arquivo de áudio não encontrado:', audioPath);
+        throw new Error(`Arquivo não encontrado: ${audioPath}`);
+      }
+
+      const stats = fs.statSync(audioPath);
+      console.log('📊 Tamanho do arquivo:', stats.size, 'bytes');
+
+      if (stats.size === 0) {
+        console.error('❌ Arquivo de áudio vazio');
+        throw new Error('Arquivo de áudio está vazio');
+      }
+
+      console.log('🌐 Enviando para OpenAI Whisper...');
       const transcription = await this.openai.audio.transcriptions.create({
         file: fs.createReadStream(audioPath),
         model: 'whisper-1',
         language: 'pt',
       });
 
+      console.log('✅ Transcrição recebida:', transcription.text.substring(0, 100) + '...');
       return transcription.text;
-    } catch (error) {
-      console.error('Erro ao transcrever áudio:', error);
-      throw new Error('Falha na transcrição do áudio');
+    } catch (error: any) {
+      console.error('❌ Erro ao transcrever áudio:', error.message);
+      console.error('Stack:', error.stack);
+      throw new Error(`Falha na transcrição: ${error.message}`);
     }
   }
 
