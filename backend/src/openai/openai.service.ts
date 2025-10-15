@@ -7,8 +7,16 @@ export class OpenAIService {
   private openai: OpenAI;
 
   constructor() {
+    const apiKey = process.env.OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      console.error('❌ OPENAI_API_KEY não encontrada no .env');
+      throw new Error('OPENAI_API_KEY não configurada');
+    }
+    
+    console.log('✅ OpenAI Service inicializado');
     this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: apiKey,
     });
   }
 
