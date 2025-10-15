@@ -1009,22 +1009,22 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
       case 'evolucoes':
         return (
           <div className="bg-white border border-gray-300">
-              {/* Header com título e botões */}
-              <div className="bg-filemaker-blue text-white px-3 py-2 flex justify-between items-center">
-                <h3 className="text-sm font-bold">EVOLUÇÃO</h3>
-                <div className="flex gap-1">
-                  {!isSearchMode && (
-                    <button
-                      onClick={() => setShowAddForm(!showAddForm)}
-                      className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
-                      disabled={isSaving}
-                      title="Criar nova evolução"
-                    >
-                      ➕
-                    </button>
-                  )}
-                </div>
+            {/* Header com título e botões */}
+            <div className="bg-filemaker-blue text-white px-3 py-2 flex justify-between items-center">
+              <h3 className="text-sm font-bold">EVOLUÇÃO</h3>
+              <div className="flex gap-1">
+                {!isSearchMode && (
+                  <button
+                    onClick={() => setShowAddForm(!showAddForm)}
+                    className="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs"
+                    disabled={isSaving}
+                    title="Criar nova evolução"
+                  >
+                    ➕
+                  </button>
+                )}
               </div>
+            </div>
 
             {/* Header das colunas - Apenas desktop */}
             <div className="hidden lg:block bg-gray-100 border-b border-gray-300 overflow-x-auto">
@@ -1310,7 +1310,6 @@ export default function PortalSection({ pacienteId, pacienteNome: pacienteNomePr
                 </div>
               )}
             </div>
-          </div>
           </div>
         )
 
