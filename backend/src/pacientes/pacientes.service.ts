@@ -439,7 +439,8 @@ export class PacientesService {
     console.log('🎯 Iniciando processamento de áudio para paciente:', id);
     console.log('📁 Arquivo recebido:', file);
     
-    const paciente = await this.pacienteModel.findById(id);
+    // Buscar paciente SEM metadados do Mongoose
+    const paciente = await this.pacienteModel.findById(id).lean();
     if (!paciente) {
       console.error('❌ Paciente não encontrado:', id);
       throw new Error('Paciente não encontrado');
@@ -494,10 +495,8 @@ export class PacientesService {
 
       // 6. Atualizar dados clínicos (SEMPRE atualizar, não apenas se vazio)
       if (extractedData.dados_clinicos) {
-        // Converter para objeto puro (sem metadados do Mongoose)
-        const dadosClinicosAtuais = paciente.dados_clinicos 
-          ? JSON.parse(JSON.stringify(paciente.dados_clinicos)) 
-          : {};
+        // Paciente já vem como objeto puro com .lean()
+        const dadosClinicosAtuais = paciente.dados_clinicos || {};
         updateData.dados_clinicos = {
           ...dadosClinicosAtuais,
           ...extractedData.dados_clinicos,
@@ -507,10 +506,8 @@ export class PacientesService {
 
       // 7. Atualizar antecedentes (mesclar com existentes)
       if (extractedData.antecedentes) {
-        // Converter para objeto puro (sem metadados do Mongoose)
-        const antecedentesAtuais: any = paciente.antecedentes 
-          ? JSON.parse(JSON.stringify(paciente.antecedentes)) 
-          : {};
+        // Paciente já vem como objeto puro com .lean()
+        const antecedentesAtuais: any = paciente.antecedentes || {};
         updateData.antecedentes = {
           paterno: { ...(antecedentesAtuais.paterno || {}), ...(extractedData.antecedentes.paterno || {}) },
           materno: { ...(antecedentesAtuais.materno || {}), ...(extractedData.antecedentes.materno || {}) },
