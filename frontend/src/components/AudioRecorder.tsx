@@ -36,13 +36,25 @@ export default function AudioRecorder({ onRecordingComplete, onTranscriptionRece
       }
 
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' })
-        setLastRecordedBlob(audioBlob)
-        onRecordingComplete(audioBlob)
-        stream.getTracks().forEach(track => track.stop())
+        // Aguardar um pouco para garantir que todos os dados foram coletados
+        setTimeout(() => {
+          const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' })
+          console.log('🎤 Áudio gravado:', audioBlob.size, 'bytes')
+          
+          if (audioBlob.size === 0) {
+            console.error('❌ Áudio vazio! Chunks:', chunksRef.current.length)
+            alert('Erro: Áudio vazio. Tente gravar novamente por pelo menos 3 segundos.')
+            return
+          }
+          
+          setLastRecordedBlob(audioBlob)
+          onRecordingComplete(audioBlob)
+          stream.getTracks().forEach(track => track.stop())
+        }, 100)
       }
 
-      mediaRecorder.start()
+      // Coletar dados a cada 100ms para garantir que não perca nada
+      mediaRecorder.start(100)
       setIsRecording(true)
       setRecordingTime(0)
 
