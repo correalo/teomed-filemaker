@@ -40,6 +40,25 @@ export const applyWeightMask = (value: string | number | null | undefined): stri
   const stringValue = value?.toString() || ''
   if (!stringValue) return '   . '
   
+  // Se o valor já contém um ponto decimal (ex: "120" ou "120.5"), trata como número formatado
+  if (stringValue.includes('.') || !isNaN(Number(stringValue))) {
+    const num = parseFloat(stringValue)
+    if (!isNaN(num)) {
+      // Formata como XXX.X
+      const formatted = num.toFixed(1)
+      const parts = formatted.split('.')
+      let intPart = parts[0]
+      const decPart = parts[1]
+      
+      // Preenche com espaços à esquerda até 3 dígitos
+      while (intPart.length < 3) {
+        intPart = ' ' + intPart
+      }
+      
+      return `${intPart}.${decPart}`
+    }
+  }
+  
   // Remove todos os caracteres não numéricos
   const cleanValue = stringValue.replace(/[^0-9.]/g, '')
   
@@ -79,6 +98,25 @@ export const applyHeightMask = (value: string | number | null | undefined): stri
   // Converte para string e trata valores nulos/undefined
   const stringValue = value?.toString() || ''
   if (!stringValue) return ' .  '
+  
+  // Se o valor já contém um ponto decimal (ex: "1.60" ou "1.6"), trata como número formatado
+  if (stringValue.includes('.') || !isNaN(Number(stringValue))) {
+    const num = parseFloat(stringValue)
+    if (!isNaN(num)) {
+      // Formata como X.XX
+      const formatted = num.toFixed(2)
+      const parts = formatted.split('.')
+      let intPart = parts[0]
+      const decPart = parts[1]
+      
+      // Se o dígito inteiro for 0, substitui por espaço
+      if (intPart === '0') {
+        intPart = ' '
+      }
+      
+      return `${intPart}.${decPart}`
+    }
+  }
   
   // Remove todos os caracteres não numéricos
   const cleanValue = stringValue.replace(/[^0-9.]/g, '')
