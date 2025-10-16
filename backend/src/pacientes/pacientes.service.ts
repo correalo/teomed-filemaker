@@ -522,14 +522,22 @@ export class PacientesService {
 
       console.log('📝 Dados a serem atualizados:', JSON.stringify(updateData, null, 2));
 
-      // 10. Atualizar paciente no banco
+      // 10. Atualizar paciente no banco e retornar objeto puro
       const pacienteAtualizado = await this.pacienteModel.findByIdAndUpdate(
         id,
         updateData,
-        { new: true }
+        { new: true, lean: true }
       );
 
       console.log('✅ Paciente atualizado com sucesso');
+      console.log('📊 Dados clínicos salvos:', JSON.stringify(pacienteAtualizado.dados_clinicos, null, 2));
+
+      // Deletar arquivo temporário (ele já foi salvo pelo endpoint normal)
+      const fs = require('fs');
+      if (fs.existsSync(audioPath)) {
+        console.log('🗑️ Deletando arquivo temporário:', audioPath);
+        fs.unlinkSync(audioPath);
+      }
 
       return {
         message: 'Áudio processado e dados extraídos com sucesso',
