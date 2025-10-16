@@ -126,6 +126,16 @@ export default function AudioRecorder({ onRecordingComplete, onTranscriptionRece
     }
   }
 
+  // Debug: mostrar estado do botão
+  console.log('🔍 Estado do AudioRecorder:', {
+    lastRecordedBlob: !!lastRecordedBlob,
+    blobSize: lastRecordedBlob?.size,
+    onAutoFillRequest: !!onAutoFillRequest,
+    isRecording,
+    disabled,
+    isProcessing
+  })
+
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {!isRecording ? (
@@ -140,13 +150,14 @@ export default function AudioRecorder({ onRecordingComplete, onTranscriptionRece
             🎤
           </button>
           
-          {lastRecordedBlob && onAutoFillRequest && (
+          {/* Sempre mostrar o botão se houver callback */}
+          {onAutoFillRequest && (
             <button
               type="button"
               onClick={handleAutoFill}
-              disabled={isProcessing || disabled}
+              disabled={!lastRecordedBlob || isProcessing || disabled}
               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-              title="Preencher CRM automaticamente com IA"
+              title={lastRecordedBlob ? "Preencher CRM automaticamente com IA" : "Grave um áudio primeiro"}
             >
               {isProcessing ? (
                 <>
