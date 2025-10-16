@@ -103,13 +103,24 @@ export default function AudioRecorder({ onRecordingComplete, onTranscriptionRece
   }
 
   const handleAutoFill = async () => {
-    if (!lastRecordedBlob || !onAutoFillRequest) return
+    console.log('🎯 BOTÃO PREENCHER AUTOMÁTICO CLICADO!', {
+      hasBlob: !!lastRecordedBlob,
+      blobSize: lastRecordedBlob?.size,
+      hasCallback: !!onAutoFillRequest
+    })
+    
+    if (!lastRecordedBlob || !onAutoFillRequest) {
+      console.error('❌ Sem blob ou callback!')
+      return
+    }
     
     setIsProcessing(true)
     try {
+      console.log('🚀 Chamando onAutoFillRequest...')
       await onAutoFillRequest(lastRecordedBlob)
+      console.log('✅ onAutoFillRequest completado!')
     } catch (error) {
-      console.error('Erro ao processar áudio:', error)
+      console.error('❌ Erro ao processar áudio:', error)
     } finally {
       setIsProcessing(false)
     }
