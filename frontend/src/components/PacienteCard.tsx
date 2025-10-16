@@ -352,19 +352,29 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
       if (response.ok) {
         const result = await response.json()
         console.log('✅ Dados extraídos:', result.extractedData)
+        console.log('✅ Paciente retornado:', result.paciente)
         
         toast.success('✨ CRM preenchido automaticamente!')
         
         // Atualizar paciente com dados extraídos
         if (result.paciente) {
+          console.log('📝 Atualizando estado com:', {
+            peso: result.paciente.dados_clinicos?.peso,
+            altura: result.paciente.dados_clinicos?.altura,
+            imc: result.paciente.dados_clinicos?.imc,
+            has: result.paciente.dados_clinicos?.has,
+            diabetes: result.paciente.dados_clinicos?.diabetes
+          })
+          
           setPaciente(result.paciente)
           setEditedPaciente(result.paciente)
+          
+          // Forçar re-render
+          setTimeout(() => {
+            setPaciente({...result.paciente})
+            setEditedPaciente({...result.paciente})
+          }, 100)
         }
-        
-        // Recarregar página para mostrar dados atualizados
-        setTimeout(() => {
-          window.location.reload()
-        }, 1500)
       } else {
         const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }))
         toast.error(`Erro ao processar: ${errorData.message}`)
