@@ -318,8 +318,19 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
   }
 
   const handleAutoFillFromAudio = async (audioBlob: Blob) => {
+    console.log('🚀 handleAutoFillFromAudio chamado!', {
+      pacienteId: paciente._id,
+      blobSize: audioBlob.size,
+      blobType: audioBlob.type
+    })
+    
     if (!paciente._id) {
       toast.error('ID do paciente não encontrado')
+      return
+    }
+
+    if (audioBlob.size === 0) {
+      toast.error('Áudio vazio! Grave novamente.')
       return
     }
 
