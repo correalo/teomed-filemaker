@@ -433,7 +433,72 @@ export class PacientesService {
   }
 
   /**
-   * Processa áudio e extrai dados estruturados automaticamente
+   * Extrai dados de um áudio já transcrito (NOVO - Solução Correta)
+   */
+  async extractDataFromExistingAudio(pacienteId: string, audioFilename: string): Promise<any> {
+    console.log('🎯 Extraindo dados de áudio existente:', audioFilename);
+    
+    // 1. Buscar paciente e encontrar o áudio no array
+    const paciente = await this.pacienteModel.findById(pacienteId).lean();
+    if (!paciente) {
+      throw new Error('Paciente não encontrado');
+    }
+
+    const audio = paciente.hma_audios?.find(a => a.filename === audioFilename);
+    if (!audio || !audio.transcricao) {
+      throw new Error('Áudio ou transcrição não encontrada');
+    }
+
+    console.log('📝 Transcrição encontrada:', audio.transcricao.substring(0, 100) + '...');
+
+    // 2. Extrair dados estruturados da transcrição usando GPT
+    const extractedData = await this.openaiService.extractMedicalData(audio.transcricao);
+    console.log('✅ Dados extraídos:', JSON.stringify(extractedData, null, 2));
+
+    // 3. Preparar dados para atualização
+    const updateData: any = {};
+
+    // Mesclar dados clínicos
+    if (extractedData.dados_clinicos) {
+      const dadosClinicosAtuais = paciente.dados_clinicos || {};
+      updateData.dados_clinicos = {
+        ...dadosClinicosAtuais,
+        ...extractedData.dados_clinicos,
+      };
+    }
+
+    // Mesclar antecedentes
+    if (extractedData.antecedentes) {
+      const antecedentesAtuais: any = paciente.antecedentes || {};
+      updateData.antecedentes = {
+        paterno: { ...(antecedentesAtuais.paterno || {}), ...(extractedData.antecedentes.paterno || {}) },
+        materno: { ...(antecedentesAtuais.materno || {}), ...(extractedData.antecedentes.materno || {}) },
+        tios: { ...(antecedentesAtuais.tios || {}), ...(extractedData.antecedentes.tios || {}) },
+        avos: { ...(antecedentesAtuais.avos || {}), ...(extractedData.antecedentes.avos || {}) },
+      };
+    }
+
+    console.log('📝 Atualizando paciente com dados extraídos...');
+
+    // 4. Atualizar paciente no banco
+    const pacienteAtualizado = await this.pacienteModel.findByIdAndUpdate(
+      pacienteId,
+      updateData,
+      { new: true, lean: true }
+    );
+
+    console.log('✅ Paciente atualizado com sucesso');
+    console.log('📊 Dados clínicos salvos:', JSON.stringify(pacienteAtualizado.dados_clinicos, null, 2));
+
+    return {
+      message: 'Dados extraídos e CRM atualizado com sucesso',
+      extractedData,
+      paciente: pacienteAtualizado,
+    };
+  }
+
+  /**
+   * Processa áudio e extrai dados estruturados automaticamente (DEPRECATED)
    */
   async processAudioAndExtractData(id: string, file: any): Promise<any> {
     console.log('🎯 Iniciando processamento de áudio para paciente:', id);

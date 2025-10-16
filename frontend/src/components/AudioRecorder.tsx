@@ -103,21 +103,18 @@ export default function AudioRecorder({ onRecordingComplete, onTranscriptionRece
   }
 
   const handleAutoFill = async () => {
-    console.log('🎯 BOTÃO PREENCHER AUTOMÁTICO CLICADO!', {
-      hasBlob: !!lastRecordedBlob,
-      blobSize: lastRecordedBlob?.size,
-      hasCallback: !!onAutoFillRequest
-    })
+    console.log('🎯 BOTÃO PREENCHER AUTOMÁTICO CLICADO!')
     
-    if (!lastRecordedBlob || !onAutoFillRequest) {
-      console.error('❌ Sem blob ou callback!')
+    if (!onAutoFillRequest) {
+      console.error('❌ Sem callback!')
       return
     }
     
     setIsProcessing(true)
     try {
       console.log('🚀 Chamando onAutoFillRequest...')
-      await onAutoFillRequest(lastRecordedBlob)
+      // Não precisa mais enviar o blob - o backend usa o áudio já salvo
+      await onAutoFillRequest(null as any)
       console.log('✅ onAutoFillRequest completado!')
     } catch (error) {
       console.error('❌ Erro ao processar áudio:', error)
@@ -155,9 +152,9 @@ export default function AudioRecorder({ onRecordingComplete, onTranscriptionRece
             <button
               type="button"
               onClick={handleAutoFill}
-              disabled={!lastRecordedBlob || isProcessing || disabled}
+              disabled={isProcessing || disabled}
               className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-              title={lastRecordedBlob ? "Preencher CRM automaticamente com IA" : "Grave um áudio primeiro"}
+              title="Preencher CRM automaticamente com IA usando o último áudio gravado"
             >
               {isProcessing ? (
                 <>

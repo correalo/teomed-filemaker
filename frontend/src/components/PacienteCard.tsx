@@ -318,35 +318,32 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
   }
 
   const handleAutoFillFromAudio = async (audioBlob: Blob) => {
-    console.log('🚀 handleAutoFillFromAudio chamado!', {
-      pacienteId: paciente._id,
-      blobSize: audioBlob.size,
-      blobType: audioBlob.type
-    })
+    console.log('🚀 handleAutoFillFromAudio chamado!')
     
     if (!paciente._id) {
       toast.error('ID do paciente não encontrado')
       return
     }
 
-    if (audioBlob.size === 0) {
-      toast.error('Áudio vazio! Grave novamente.')
+    // Buscar o último áudio gravado do array hma_audios
+    const ultimoAudio = paciente.hma_audios?.[paciente.hma_audios.length - 1]
+    if (!ultimoAudio || !ultimoAudio.filename) {
+      toast.error('Nenhum áudio encontrado. Grave um áudio primeiro.')
       return
     }
 
-    toast.info('🤖 Processando áudio com IA...')
+    console.log('📁 Usando áudio existente:', ultimoAudio.filename)
+    toast.info('🤖 Extraindo dados com IA...')
     const token = localStorage.getItem('token')
 
     try {
-      const formData = new FormData()
-      formData.append('audio', audioBlob, 'recording.webm')
-
-      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}/hma/audio/process`, {
+      // NOVO: Chamar endpoint que usa audioFilename (não envia arquivo novamente)
+      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}/hma/audio/${ultimoAudio.filename}/extract`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       })
 
       if (response.ok) {

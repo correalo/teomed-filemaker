@@ -187,6 +187,20 @@ export class PacientesController {
     return this.pacientesService.deleteHmaAudio(id, filename);
   }
 
+  @Post(':id/hma/audio/:audioFilename/extract')
+  @ApiOperation({ 
+    summary: 'Extrair dados de áudio já transcrito', 
+    description: 'Usa a transcrição existente de um áudio já salvo para extrair dados estruturados e preencher o CRM' 
+  })
+  @ApiResponse({ status: 200, description: 'Dados extraídos com sucesso' })
+  @ApiResponse({ status: 404, description: 'Áudio não encontrado' })
+  async extractDataFromExistingAudio(
+    @Param('id') id: string,
+    @Param('audioFilename') audioFilename: string,
+  ) {
+    return this.pacientesService.extractDataFromExistingAudio(id, audioFilename);
+  }
+
   @Post(':id/hma/audio/process')
   @UseInterceptors(FileInterceptor('audio', {
     storage: diskStorage({
@@ -207,8 +221,8 @@ export class PacientesController {
     },
   }))
   @ApiOperation({ 
-    summary: 'Processar áudio e extrair dados', 
-    description: 'Transcreve áudio usando Whisper e extrai dados estruturados usando GPT para preencher automaticamente o CRM' 
+    summary: '[DEPRECATED] Processar áudio e extrair dados', 
+    description: 'Use o endpoint /extract com audioFilename. Transcreve áudio usando Whisper e extrai dados estruturados usando GPT para preencher automaticamente o CRM' 
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
