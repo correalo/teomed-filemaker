@@ -1323,7 +1323,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                           <input
                             type="text"
                             className="bg-white w-full rounded-l font-mono"
-                            defaultValue={applyWeightMask(editedPaciente?.dados_clinicos?.peso)}
+                            value={applyWeightMask(editedPaciente?.dados_clinicos?.peso)}
                             onChange={(e) => {
                               // Pega apenas os dígitos da entrada (sem ponto)
                               const inputValue = e.target.value.replace(/[^0-9]/g, '')
@@ -1389,7 +1389,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                             name="altura"
                             id="altura"
                             className="bg-white w-full rounded-l font-mono"
-                            defaultValue={applyHeightMask(editedPaciente?.dados_clinicos?.altura)}
+                            value={applyHeightMask(editedPaciente?.dados_clinicos?.altura)}
                             onChange={(e) => {
                               // Pega apenas os dígitos da entrada (sem ponto)
                               const inputValue = e.target.value.replace(/[^0-9]/g, '')
