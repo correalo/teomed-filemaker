@@ -338,12 +338,15 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
 
     try {
       // NOVO: Chamar endpoint que usa audioFilename (não envia arquivo novamente)
-      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}/hma/audio/${ultimoAudio.filename}/extract`, {
+      const response = await fetch(`http://localhost:3004/pacientes/${paciente._id}/hma/audio/extract`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          audioFilename: ultimoAudio.filename
+        })
       })
 
       if (response.ok) {

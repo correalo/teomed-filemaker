@@ -187,16 +187,29 @@ export class PacientesController {
     return this.pacientesService.deleteHmaAudio(id, filename);
   }
 
-  @Post(':id/hma/audio/:audioFilename/extract')
+  @Post(':id/hma/audio/extract')
   @ApiOperation({ 
     summary: 'Extrair dados de áudio já transcrito', 
     description: 'Usa a transcrição existente de um áudio já salvo para extrair dados estruturados e preencher o CRM' 
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        audioFilename: {
+          type: 'string',
+          description: 'Nome do arquivo de áudio (ex: hma-123456789.mp3)',
+          example: 'hma-1760640092451-719345680.mp3'
+        }
+      },
+      required: ['audioFilename']
+    }
   })
   @ApiResponse({ status: 200, description: 'Dados extraídos com sucesso' })
   @ApiResponse({ status: 404, description: 'Áudio não encontrado' })
   async extractDataFromExistingAudio(
     @Param('id') id: string,
-    @Param('audioFilename') audioFilename: string,
+    @Body('audioFilename') audioFilename: string,
   ) {
     return this.pacientesService.extractDataFromExistingAudio(id, audioFilename);
   }
