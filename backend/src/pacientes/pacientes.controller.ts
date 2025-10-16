@@ -138,6 +138,34 @@ export class PacientesController {
     return this.pacientesService.remove(id);
   }
 
+  // IMPORTANTE: Rotas mais específicas devem vir ANTES de rotas genéricas
+  @Post(':id/hma/audio/extract')
+  @ApiOperation({ 
+    summary: 'Extrair dados de áudio já transcrito', 
+    description: 'Usa a transcrição existente de um áudio já salvo para extrair dados estruturados e preencher o CRM' 
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        audioFilename: {
+          type: 'string',
+          description: 'Nome do arquivo de áudio (ex: hma-123456789.mp3)',
+          example: 'hma-1760640092451-719345680.mp3'
+        }
+      },
+      required: ['audioFilename']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Dados extraídos com sucesso' })
+  @ApiResponse({ status: 404, description: 'Áudio não encontrado' })
+  async extractDataFromExistingAudio(
+    @Param('id') id: string,
+    @Body('audioFilename') audioFilename: string,
+  ) {
+    return this.pacientesService.extractDataFromExistingAudio(id, audioFilename);
+  }
+
   @Post(':id/hma/audio')
   @UseInterceptors(FileInterceptor('audio', {
     storage: diskStorage({
@@ -185,33 +213,6 @@ export class PacientesController {
   @ApiResponse({ status: 404, description: 'Paciente não encontrado' })
   async deleteHmaAudio(@Param('id') id: string, @Param('filename') filename: string) {
     return this.pacientesService.deleteHmaAudio(id, filename);
-  }
-
-  @Post(':id/hma/audio/extract')
-  @ApiOperation({ 
-    summary: 'Extrair dados de áudio já transcrito', 
-    description: 'Usa a transcrição existente de um áudio já salvo para extrair dados estruturados e preencher o CRM' 
-  })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        audioFilename: {
-          type: 'string',
-          description: 'Nome do arquivo de áudio (ex: hma-123456789.mp3)',
-          example: 'hma-1760640092451-719345680.mp3'
-        }
-      },
-      required: ['audioFilename']
-    }
-  })
-  @ApiResponse({ status: 200, description: 'Dados extraídos com sucesso' })
-  @ApiResponse({ status: 404, description: 'Áudio não encontrado' })
-  async extractDataFromExistingAudio(
-    @Param('id') id: string,
-    @Body('audioFilename') audioFilename: string,
-  ) {
-    return this.pacientesService.extractDataFromExistingAudio(id, audioFilename);
   }
 
   @Post(':id/hma/audio/process')
