@@ -21,6 +21,9 @@ export default function AudioRecorder({ onRecordingComplete, onTranscriptionRece
 
   const startRecording = async () => {
     try {
+      // Limpar blob anterior ao iniciar nova gravação
+      setLastRecordedBlob(null)
+      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       const mediaRecorder = new MediaRecorder(stream)
       mediaRecorderRef.current = mediaRecorder
