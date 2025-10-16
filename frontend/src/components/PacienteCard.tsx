@@ -1711,7 +1711,7 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                   <span>ESTIGMA SOCIAL</span>
                 </label>
               </div>
-              
+
             </div>
           </div>
         </div>
@@ -1800,38 +1800,29 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
               <div className="space-y-2">
                 {isEditing ? (
                   <div>
-                    <label className="block text-xs font-medium text-filemaker-text mb-1">MEDICAMENTO</label>
-                    <input
-                      type="text"
-                      value={(editedPaciente as any)?.dados_clinicos?.medicamento || ''}
-                      onChange={(e) => handleInputChange('dados_clinicos.medicamento', e.target.value)}
-                      className="filemaker-input w-full text-sm mb-2"
+                    <label className="block text-xs font-medium text-filemaker-text mb-1">
+                      MEDICAMENTOS (separados por vírgula)
+                    </label>
+                    <textarea
+                      value={(editedPaciente?.dados_clinicos?.medicacoes_preop || []).join(', ')}
+                      onChange={(e) => {
+                        const medicacoes = e.target.value.split(',').map(m => m.trim()).filter(m => m)
+                        handleInputChange('dados_clinicos.medicacoes_preop', medicacoes)
+                      }}
+                      className="filemaker-input w-full text-sm min-h-[80px]"
                       style={{ backgroundColor: '#fff' }}
-                      placeholder="Nome do medicamento"
-                    />
-                    <label className="block text-xs font-medium text-filemaker-text mb-1">DOSAGEM</label>
-                    <input
-                      type="text"
-                      value={(editedPaciente as any)?.dados_clinicos?.dosagem || ''}
-                      onChange={(e) => handleInputChange('dados_clinicos.dosagem', e.target.value)}
-                      className="filemaker-input w-full text-sm"
-                      style={{ backgroundColor: '#fff' }}
-                      placeholder="Dosagem"
+                      placeholder="Ex: Losartana 50mg 1x/dia, Metformina 850mg 2x/dia"
                     />
                   </div>
                 ) : (
                   <div>
-                    {(paciente.dados_clinicos as any)?.medicamento && (
-                      <div className="text-sm text-filemaker-text">
-                        <strong>Medicamento:</strong> {(paciente.dados_clinicos as any).medicamento}
-                      </div>
-                    )}
-                    {(paciente.dados_clinicos as any)?.dosagem && (
-                      <div className="text-sm text-filemaker-text">
-                        <strong>Dosagem:</strong> {(paciente.dados_clinicos as any).dosagem}
-                      </div>
-                    )}
-                    {!(paciente.dados_clinicos as any)?.medicamento && !(paciente.dados_clinicos as any)?.dosagem && (
+                    {(paciente.dados_clinicos?.medicacoes_preop || []).length > 0 ? (
+                      <ul className="list-disc list-inside space-y-1">
+                        {(paciente.dados_clinicos?.medicacoes_preop || []).map((med: string, idx: number) => (
+                          <li key={idx} className="text-sm text-filemaker-text">{med}</li>
+                        ))}
+                      </ul>
+                    ) : (
                       <div className="text-sm text-gray-500">Nenhum medicamento cadastrado</div>
                     )}
                   </div>
