@@ -458,21 +458,9 @@ export class PacientesService {
       console.log('✅ Transcrição completa');
       console.log('✅ Dados extraídos:', JSON.stringify(extractedData, null, 2));
 
-      // 2. Salvar áudio no array de áudios
-      const audioUrl = `/uploads/hma/audio/${file.filename}`;
-      const audioData = {
-        filename: file.filename,
-        url: audioUrl,
-        transcricao: transcription,
-        duracao: 0, // Pode ser calculado se necessário
-        data_gravacao: new Date(),
-      };
-
-      // 3. Adicionar áudio ao array
-      await this.pacienteModel.findByIdAndUpdate(id, {
-        $push: { hma_audios: audioData },
-        hma_transcricao: transcription,
-      });
+      // 2. NÃO salvar áudio novamente - ele já foi salvo pelo endpoint normal
+      // O objetivo deste endpoint é apenas PROCESSAR e EXTRAIR dados
+      console.log('⚠️ Áudio já foi salvo anteriormente, apenas processando dados...');
 
       // 4. Preparar dados para atualização do paciente
       const updateData: any = {};
@@ -547,7 +535,6 @@ export class PacientesService {
         message: 'Áudio processado e dados extraídos com sucesso',
         transcription,
         extractedData,
-        audioUrl,
         paciente: pacienteAtualizado,
       };
     } catch (error) {
