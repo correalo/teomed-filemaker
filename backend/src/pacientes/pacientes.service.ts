@@ -494,17 +494,23 @@ export class PacientesService {
 
       // 6. Atualizar dados clínicos (SEMPRE atualizar, não apenas se vazio)
       if (extractedData.dados_clinicos) {
-        const dadosClinicosAtuais = paciente.dados_clinicos || {};
+        // Converter para objeto puro (sem metadados do Mongoose)
+        const dadosClinicosAtuais = paciente.dados_clinicos 
+          ? JSON.parse(JSON.stringify(paciente.dados_clinicos)) 
+          : {};
         updateData.dados_clinicos = {
           ...dadosClinicosAtuais,
           ...extractedData.dados_clinicos,
         };
-        console.log('💊 Dados clínicos a serem atualizados:', updateData.dados_clinicos);
+        console.log('💊 Dados clínicos a serem atualizados:', JSON.stringify(updateData.dados_clinicos, null, 2));
       }
 
       // 7. Atualizar antecedentes (mesclar com existentes)
       if (extractedData.antecedentes) {
-        const antecedentesAtuais: any = paciente.antecedentes || {};
+        // Converter para objeto puro (sem metadados do Mongoose)
+        const antecedentesAtuais: any = paciente.antecedentes 
+          ? JSON.parse(JSON.stringify(paciente.antecedentes)) 
+          : {};
         updateData.antecedentes = {
           paterno: { ...(antecedentesAtuais.paterno || {}), ...(extractedData.antecedentes.paterno || {}) },
           materno: { ...(antecedentesAtuais.materno || {}), ...(extractedData.antecedentes.materno || {}) },
