@@ -174,7 +174,7 @@ IMPORTANTE:
 - Para campos booleanos (true/false), marque true APENAS se a condição for EXPLICITAMENTE mencionada
 - Para peso, extraia apenas números sem unidade (ex: "85.2" para "85.2 quilos" ou "85.2 kg")
 - Para altura, extraia em metros com ponto decimal (ex: "1.78" para "1 metro e 78" ou "178 cm")
-- Para medicações, retorne array de strings (ex: ["Metformina 850mg", "Losartana 50mg"])
+- Para medicações, retorne array de strings incluindo nome, dosagem E frequência (ex: ["Metformina 850mg 2x/dia", "Losartana 50mg 1x/dia cedo"])
 - Para exames, retorne array de strings (ex: ["Hemograma", "Glicemia"])
 - A transcrição completa deve ir no campo "hma.transcricao"
 - Identifique sinônimos: "hipertensão" = "has", "pressão alta" = "has", "açúcar no sangue" = "diabetes"
@@ -189,7 +189,9 @@ EXEMPLOS DE EXTRAÇÃO:
 - "peso 95 quilos" → peso: "95"
 - "1 metro e 60" → altura: "1.60"
 - "tem diabetes" → diabetes: true
-- "usa metformina" → medicacoes_preop: ["Metformina"]
+- "toma losartana 50mg uma vez ao dia" → medicacoes_preop: ["Losartana 50mg 1x/dia"]
+- "usa metformina 850 duas vezes por dia" → medicacoes_preop: ["Metformina 850mg 2x/dia"]
+- "toma atenolol 25 miligramas pela manhã" → medicacoes_preop: ["Atenolol 25mg pela manhã"]
 - "pai tinha diabetes" → antecedentes.paterno.dm: true
 - "mãe com pressão alta" → antecedentes.materno.has: true
 - "tio teve AVC" → antecedentes.tios.avc: true
