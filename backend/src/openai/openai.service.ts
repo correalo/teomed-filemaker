@@ -191,6 +191,8 @@ EXEMPLOS DE EXTRAÇÃO:
 - "tem diabetes" → diabetes: true
 - "usa metformina" → medicacoes_preop: ["Metformina"]
 - "pai tinha diabetes" → antecedentes.paterno.dm: true
+- "mãe com pressão alta" → antecedentes.materno.has: true
+- "tio teve AVC" → antecedentes.tios.avc: true
 - "avô com neoplasia" → antecedentes.avos.neoplasias: true
 
 Texto da consulta:
