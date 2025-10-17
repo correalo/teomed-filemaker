@@ -174,7 +174,9 @@ IMPORTANTE:
 - Para campos booleanos (true/false), marque true APENAS se a condição for EXPLICITAMENTE mencionada
 - Para peso, extraia apenas números sem unidade (ex: "85.2" para "85.2 quilos" ou "85.2 kg")
 - Para altura, extraia em metros com ponto decimal (ex: "1.78" para "1 metro e 78" ou "178 cm")
-- Para medicações, retorne array de strings incluindo nome, dosagem E frequência (ex: ["Metformina 850mg 2x/dia", "Losartana 50mg 1x/dia cedo"])
+- Para medicações, retorne array de strings incluindo nome, dosagem E frequência/horários
+  * Se houver múltiplas doses no dia, especifique cada horário (ex: "30U manhã, 60U almoço, 90U noite")
+  * Use formato compacto e claro (ex: "U" para unidades, "mg" para miligramas)
 - Para exames, retorne array de strings (ex: ["Hemograma", "Glicemia"])
 - A transcrição completa deve ir no campo "hma.transcricao"
 - Identifique sinônimos: "hipertensão" = "has", "pressão alta" = "has", "açúcar no sangue" = "diabetes"
@@ -191,7 +193,9 @@ EXEMPLOS DE EXTRAÇÃO:
 - "tem diabetes" → diabetes: true
 - "toma losartana 50mg uma vez ao dia" → medicacoes_preop: ["Losartana 50mg 1x/dia"]
 - "usa metformina 850 duas vezes por dia" → medicacoes_preop: ["Metformina 850mg 2x/dia"]
-- "toma atenolol 25 miligramas pela manhã" → medicacoes_preop: ["Atenolol 25mg pela manhã"]
+- "toma atenolol 25 miligramas pela manhã" → medicacoes_preop: ["Atenolol 25mg manhã"]
+- "insulina NPH 30 unidades de manhã, 60 unidades no almoço, 90 unidades à noite" → medicacoes_preop: ["Insulina NPH 30U manhã, 60U almoço, 90U noite"]
+- "insulina regular 10 unidades antes do café, 15 antes do almoço" → medicacoes_preop: ["Insulina Regular 10U café, 15U almoço"]
 - "pai tinha diabetes" → antecedentes.paterno.dm: true
 - "mãe com pressão alta" → antecedentes.materno.has: true
 - "tio teve AVC" → antecedentes.tios.avc: true
