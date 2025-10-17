@@ -141,6 +141,24 @@ Seja preciso e não invente dados.`,
       "dislipidemia": false,
       "neoplasias": false,
       "outros": false
+    },
+    "tios": {
+      "dm": false,
+      "has": false,
+      "iam": false,
+      "avc": false,
+      "dislipidemia": false,
+      "neoplasias": false,
+      "outros": false
+    },
+    "avos": {
+      "dm": false,
+      "has": false,
+      "iam": false,
+      "avc": false,
+      "dislipidemia": false,
+      "neoplasias": false,
+      "outros": false
     }
   },
   "exame_fisico": {
@@ -161,11 +179,19 @@ IMPORTANTE:
 - A transcrição completa deve ir no campo "hma.transcricao"
 - Identifique sinônimos: "hipertensão" = "has", "pressão alta" = "has", "açúcar no sangue" = "diabetes"
 
+ANTECEDENTES FAMILIARES:
+- "pai" ou "paterno" → antecedentes.paterno
+- "mãe" ou "materno" → antecedentes.materno
+- "tio" ou "tia" → antecedentes.tios
+- "avô" ou "avó" ou "avós" → antecedentes.avos
+
 EXEMPLOS DE EXTRAÇÃO:
 - "peso 95 quilos" → peso: "95"
 - "1 metro e 60" → altura: "1.60"
 - "tem diabetes" → diabetes: true
 - "usa metformina" → medicacoes_preop: ["Metformina"]
+- "pai tinha diabetes" → antecedentes.paterno.dm: true
+- "avô com neoplasia" → antecedentes.avos.neoplasias: true
 
 Texto da consulta:
 ${transcription}`,
