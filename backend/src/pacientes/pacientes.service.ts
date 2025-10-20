@@ -498,6 +498,35 @@ export class PacientesService {
   }
 
   /**
+   * Analisa a personalidade do paciente com base no Enneagrama
+   */
+  async analisarPersonalidade(pacienteId: string, texto: string): Promise<any> {
+    console.log('🧠 Analisando personalidade do paciente:', pacienteId);
+    
+    // Verificar se paciente existe
+    const paciente = await this.pacienteModel.findById(pacienteId);
+    if (!paciente) {
+      throw new Error('Paciente não encontrado');
+    }
+
+    // Chamar OpenAI para análise de personalidade
+    const analise = await this.openaiService.analisarPersonalidade(texto);
+    
+    console.log('✅ Análise de personalidade concluída:', analise);
+
+    // Opcional: Salvar análise no paciente
+    // paciente.analise_personalidade = analise;
+    // await paciente.save();
+
+    return {
+      pacienteId,
+      pacienteNome: paciente.nome,
+      ...analise,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
    * Processa áudio e extrai dados estruturados automaticamente (DEPRECATED)
    */
   async processAudioAndExtractData(id: string, file: any): Promise<any> {

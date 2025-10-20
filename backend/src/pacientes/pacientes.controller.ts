@@ -166,6 +166,43 @@ export class PacientesController {
     return this.pacientesService.extractDataFromExistingAudio(id, audioFilename);
   }
 
+  @Post(':id/personalidade/analisar')
+  @ApiOperation({ 
+    summary: 'Analisar personalidade do paciente', 
+    description: 'Analisa a personalidade do paciente com base no Enneagrama usando transcrição de áudio ou texto' 
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        texto: {
+          type: 'string',
+          description: 'Texto da conversa ou transcrição do áudio para análise',
+          example: 'Doutor, tenho medo da cirurgia, mas já tentei de tudo. Só quero fazer se for 100% segura.'
+        }
+      },
+      required: ['texto']
+    }
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Análise de personalidade concluída',
+    schema: {
+      type: 'object',
+      properties: {
+        tipo: { type: 'string', example: 'Tipo 6 – Leal (Cauteloso)' },
+        justificativa: { type: 'string', example: 'O paciente expressa medo e necessidade de segurança antes de decidir.' },
+        resposta: { type: 'string', example: 'Entendo totalmente sua preocupação...' }
+      }
+    }
+  })
+  async analisarPersonalidade(
+    @Param('id') id: string,
+    @Body('texto') texto: string,
+  ) {
+    return this.pacientesService.analisarPersonalidade(id, texto);
+  }
+
   @Post(':id/hma/audio')
   @UseInterceptors(FileInterceptor('audio', {
     storage: diskStorage({

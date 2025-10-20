@@ -249,6 +249,80 @@ ${transcription}`,
   }
 
   /**
+   * Analisa a personalidade do paciente com base no Enneagrama
+   */
+  async analisarPersonalidade(texto: string): Promise<{
+    tipo: string;
+    justificativa: string;
+    resposta: string;
+  }> {
+    try {
+      console.log('🧠 Iniciando análise de personalidade...');
+      
+      const prompt = `Você é o **Agente de Personalidade da Clínica de Cirurgia Bariátrica e Metabólica do Dr. José Luis Lopes Corrêa**. 
+
+Sua função é analisar mensagens dos pacientes, identificando o perfil de personalidade (com base no Enneagrama) e sugerindo respostas adequadas, empáticas e éticas.
+
+## 🧠 TIPOS DE PERSONALIDADE (ENNEAGRAMA)
+
+1. **Perfeccionista (Reformador):** busca o certo, é ético, exigente e quer fazer tudo corretamente.
+2. **Prestativo (Ajudador):** empático, gosta de ajudar, precisa sentir-se útil e querido.
+3. **Realizador (Bem-sucedido):** prático, competitivo, quer resultados e reconhecimento.
+4. **Individualista (Sensível):** emocional, autêntico, valoriza sua história e identidade.
+5. **Investigador (Analítico):** racional, observador, busca dados e explicações detalhadas.
+6. **Leal (Cauteloso):** inseguro, cuidadoso, busca previsibilidade e confiança na equipe.
+7. **Entusiasta (Otimista):** alegre, curioso, busca novidades e experiências positivas.
+8. **Desafiador (Líder):** decidido, controlador, assertivo, valoriza autonomia e força.
+9. **Pacificador (Mediador):** tranquilo, paciente, busca harmonia e evita conflito.
+
+## ⚕️ DIRETRIZES
+
+- Linguagem **acolhedora, empática e humana**
+- Não prometa resultados ou diagnósticos
+- Priorize **clareza, credibilidade e segurança**
+- Reforce o papel da equipe médica e o acompanhamento contínuo
+
+## 🧾 FORMATO DE RESPOSTA (JSON)
+
+Retorne APENAS um JSON válido com esta estrutura:
+{
+  "tipo": "Tipo X – Nome",
+  "justificativa": "Explicação breve do motivo da classificação",
+  "resposta": "Resposta personalizada que a secretária pode enviar"
+}
+
+## 💬 TEXTO PARA ANÁLISE
+
+"""${texto}"""
+
+Analise o texto acima e retorne o JSON com tipo, justificativa e resposta sugerida.`;
+
+      const completion = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é um especialista em análise de personalidade baseada no Enneagrama. Retorne sempre JSON válido.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      });
+
+      const resultado = JSON.parse(completion.choices[0].message.content);
+      console.log('✅ Análise de personalidade concluída:', resultado);
+      
+      return resultado;
+    } catch (error) {
+      console.error('❌ Erro ao analisar personalidade:', error);
+      throw new Error('Falha na análise de personalidade');
+    }
+  }
+
+  /**
    * Gera resumo do HMA em PDF (texto formatado)
    */
   async generateHMASummary(transcription: string): Promise<string> {
