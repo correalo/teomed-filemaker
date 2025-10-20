@@ -1377,7 +1377,6 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                                 analise_personalidade: {
                                   tipo: resultado.tipo,
                                   justificativa: resultado.justificativa,
-                                  resposta: resultado.resposta,
                                   data_analise: resultado.data_analise
                                 }
                               }
@@ -1402,20 +1401,14 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                       <div className="bg-purple-50 p-3 rounded border border-purple-200 space-y-2">
                         <div>
                           <strong className="text-xs text-purple-900">Tipo:</strong>
-                          <p className="text-sm text-purple-800 mt-1">
+                          <p className="text-sm text-purple-800 font-semibold mt-1">
                             {(isEditing ? editedPaciente?.analise_personalidade?.tipo : paciente.analise_personalidade?.tipo)}
                           </p>
                         </div>
                         <div>
-                          <strong className="text-xs text-purple-900">Justificativa:</strong>
-                          <p className="text-xs text-gray-700 mt-1">
+                          <strong className="text-xs text-purple-900">Análise:</strong>
+                          <p className="text-xs text-gray-700 mt-1 leading-relaxed">
                             {(isEditing ? editedPaciente?.analise_personalidade?.justificativa : paciente.analise_personalidade?.justificativa)}
-                          </p>
-                        </div>
-                        <div>
-                          <strong className="text-xs text-purple-900">Resposta Sugerida:</strong>
-                          <p className="text-xs text-gray-700 mt-1 italic">
-                            "{(isEditing ? editedPaciente?.analise_personalidade?.resposta : paciente.analise_personalidade?.resposta)}"
                           </p>
                         </div>
                         {(isEditing ? editedPaciente?.analise_personalidade?.data_analise : paciente.analise_personalidade?.data_analise) && (

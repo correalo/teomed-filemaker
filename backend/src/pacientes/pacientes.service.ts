@@ -376,7 +376,6 @@ export class PacientesService {
       updateData.analise_personalidade = {
         tipo: analisePersonalidade.tipo,
         justificativa: analisePersonalidade.justificativa,
-        resposta: analisePersonalidade.resposta,
         data_analise: new Date(),
       };
     }
@@ -547,7 +546,6 @@ export class PacientesService {
     paciente.analise_personalidade = {
       tipo: analise.tipo,
       justificativa: analise.justificativa,
-      resposta: analise.resposta,
       data_analise: new Date(),
     };
     await paciente.save();

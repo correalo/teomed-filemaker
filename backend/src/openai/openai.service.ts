@@ -254,14 +254,13 @@ ${transcription}`,
   async analisarPersonalidade(texto: string): Promise<{
     tipo: string;
     justificativa: string;
-    resposta: string;
   }> {
     try {
       console.log('🧠 Iniciando análise de personalidade...');
       
       const prompt = `Você é o **Agente de Personalidade da Clínica de Cirurgia Bariátrica e Metabólica do Dr. José Luis Lopes Corrêa**. 
 
-Sua função é analisar mensagens dos pacientes, identificando o perfil de personalidade (com base no Enneagrama) e sugerindo respostas adequadas, empáticas e éticas.
+Sua função é analisar conversas com pacientes e identificar o perfil de personalidade com base no Enneagrama.
 
 ## 🧠 TIPOS DE PERSONALIDADE (ENNEAGRAMA)
 
@@ -275,27 +274,19 @@ Sua função é analisar mensagens dos pacientes, identificando o perfil de pers
 8. **Desafiador (Líder):** decidido, controlador, assertivo, valoriza autonomia e força.
 9. **Pacificador (Mediador):** tranquilo, paciente, busca harmonia e evita conflito.
 
-## ⚕️ DIRETRIZES
-
-- Linguagem **acolhedora, empática e humana**
-- Não prometa resultados ou diagnósticos
-- Priorize **clareza, credibilidade e segurança**
-- Reforce o papel da equipe médica e o acompanhamento contínuo
-
 ## 🧾 FORMATO DE RESPOSTA (JSON)
 
 Retorne APENAS um JSON válido com esta estrutura:
 {
   "tipo": "Tipo X – Nome",
-  "justificativa": "Explicação breve do motivo da classificação",
-  "resposta": "Resposta personalizada que a secretária pode enviar"
+  "justificativa": "Explicação detalhada do motivo da classificação, incluindo palavras-chave e comportamentos observados"
 }
 
 ## 💬 TEXTO PARA ANÁLISE
 
 """${texto}"""
 
-Analise o texto acima e retorne o JSON com tipo, justificativa e resposta sugerida.`;
+Analise o texto acima e retorne o JSON com tipo e justificativa detalhada.`;
 
       const completion = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',

@@ -346,14 +346,12 @@ export class Paciente {
     type: {
       tipo: String,
       justificativa: String,
-      resposta: String,
       data_analise: Date,
     }
   })
   analise_personalidade: {
     tipo: string;
     justificativa: string;
-    resposta: string;
     data_analise: Date;
   };
 
