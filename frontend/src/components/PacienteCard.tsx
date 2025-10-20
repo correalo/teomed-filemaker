@@ -284,19 +284,35 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
           filename: result.audioFilename,
           url: result.audioUrl,
           transcricao: result.transcricao,
-          totalAudios: result.audios?.length
+          totalAudios: result.audios?.length,
+          analisePersonalidade: result.analise_personalidade?.tipo
         })
         
-        toast.success('Áudio transcrito com sucesso!')
+        // Mensagem de sucesso diferente se houver análise de personalidade
+        if (result.analise_personalidade) {
+          toast.success('🧠 Áudio transcrito e personalidade analisada!')
+        } else {
+          toast.success('Áudio transcrito com sucesso!')
+        }
         
-        // Atualizar array de áudios
+        // Atualizar array de áudios e análise de personalidade
         handleInputChange('hma_audios', result.audios || [])
+        if (result.analise_personalidade) {
+          handleInputChange('analise_personalidade', result.analise_personalidade)
+        }
         
         // Também atualizar o paciente local
-        setPaciente({
+        const pacienteAtualizado = {
           ...paciente,
           hma_audios: result.audios || []
-        })
+        }
+        
+        if (result.analise_personalidade) {
+          pacienteAtualizado.analise_personalidade = result.analise_personalidade
+        }
+        
+        setPaciente(pacienteAtualizado)
+        setEditedPaciente(pacienteAtualizado)
       } else {
         const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }))
         const errorMsg = errorData.message || 'Erro ao processar áudio'
@@ -1313,6 +1329,100 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
                             </button>
                           )}
                         </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Análise de Personalidade */}
+                <div>
+                  <label className="block text-xs text-filemaker-text mb-1">
+                    ANÁLISE DE PERSONALIDADE
+                    <span className="text-xs text-gray-500 ml-2">(automática após gravação)</span>
+                  </label>
+                  <div className="space-y-2">
+                    {isEditing && (isEditing ? editedPaciente?.analise_personalidade : paciente.analise_personalidade) && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const ultimoAudio = paciente.hma_audios?.[paciente.hma_audios.length - 1]
+                          if (!ultimoAudio?.transcricao) {
+                            toast.error('Grave um áudio primeiro para analisar a personalidade')
+                            return
+                          }
+                          
+                          toast.info('🧠 Re-analisando personalidade...')
+                          const token = localStorage.getItem('token')
+                          
+                          try {
+                            const response = await fetch(
+                              `http://localhost:3004/pacientes/${paciente._id}/personalidade/analisar`,
+                              {
+                                method: 'POST',
+                                headers: {
+                                  'Authorization': `Bearer ${token}`,
+                                  'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ texto: ultimoAudio.transcricao })
+                              }
+                            )
+                            
+                            if (response.ok) {
+                              const resultado = await response.json()
+                              toast.success('✅ Análise atualizada!')
+                              
+                              // Atualizar paciente com análise
+                              const pacienteAtualizado = {
+                                ...paciente,
+                                analise_personalidade: {
+                                  tipo: resultado.tipo,
+                                  justificativa: resultado.justificativa,
+                                  resposta: resultado.resposta,
+                                  data_analise: resultado.data_analise
+                                }
+                              }
+                              setPaciente(pacienteAtualizado)
+                              setEditedPaciente(pacienteAtualizado)
+                            } else {
+                              toast.error('Erro ao analisar personalidade')
+                            }
+                          } catch (error) {
+                            console.error('Erro:', error)
+                            toast.error('Erro ao analisar personalidade')
+                          }
+                        }}
+                        className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs py-1.5 px-3 rounded flex items-center justify-center gap-2"
+                        disabled={!paciente.hma_audios || paciente.hma_audios.length === 0}
+                      >
+                        🔄 Re-analisar
+                      </button>
+                    )}
+                    
+                    {(isEditing ? editedPaciente?.analise_personalidade : paciente.analise_personalidade) && (
+                      <div className="bg-purple-50 p-3 rounded border border-purple-200 space-y-2">
+                        <div>
+                          <strong className="text-xs text-purple-900">Tipo:</strong>
+                          <p className="text-sm text-purple-800 mt-1">
+                            {(isEditing ? editedPaciente?.analise_personalidade?.tipo : paciente.analise_personalidade?.tipo)}
+                          </p>
+                        </div>
+                        <div>
+                          <strong className="text-xs text-purple-900">Justificativa:</strong>
+                          <p className="text-xs text-gray-700 mt-1">
+                            {(isEditing ? editedPaciente?.analise_personalidade?.justificativa : paciente.analise_personalidade?.justificativa)}
+                          </p>
+                        </div>
+                        <div>
+                          <strong className="text-xs text-purple-900">Resposta Sugerida:</strong>
+                          <p className="text-xs text-gray-700 mt-1 italic">
+                            "{(isEditing ? editedPaciente?.analise_personalidade?.resposta : paciente.analise_personalidade?.resposta)}"
+                          </p>
+                        </div>
+                        {(isEditing ? editedPaciente?.analise_personalidade?.data_analise : paciente.analise_personalidade?.data_analise) && (
+                          <div className="text-xs text-gray-500 pt-2 border-t border-purple-200">
+                            Analisado em: {new Date(isEditing ? editedPaciente?.analise_personalidade?.data_analise : paciente.analise_personalidade?.data_analise).toLocaleString('pt-BR')}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

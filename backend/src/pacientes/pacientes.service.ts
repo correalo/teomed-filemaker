@@ -354,11 +354,36 @@ export class PacientesService {
       data_gravacao: new Date(),
     });
     
+    // Analisar personalidade automaticamente se houver transcrição válida
+    let analisePersonalidade = null;
+    if (transcricao && transcricao.length > 50 && !transcricao.startsWith('Erro ao transcrever')) {
+      try {
+        console.log('🧠 Iniciando análise automática de personalidade...');
+        analisePersonalidade = await this.openaiService.analisarPersonalidade(transcricao);
+        console.log('✅ Análise de personalidade concluída:', analisePersonalidade.tipo);
+      } catch (error) {
+        console.error('⚠️ Erro ao analisar personalidade (não crítico):', error.message);
+        // Não falhar o upload por causa da análise
+      }
+    }
+    
+    // Atualizar paciente com áudio e análise de personalidade
+    const updateData: any = {
+      hma_audios: audios,
+    };
+    
+    if (analisePersonalidade) {
+      updateData.analise_personalidade = {
+        tipo: analisePersonalidade.tipo,
+        justificativa: analisePersonalidade.justificativa,
+        resposta: analisePersonalidade.resposta,
+        data_analise: new Date(),
+      };
+    }
+    
     const updated = await this.pacienteModel.findByIdAndUpdate(
       id, 
-      {
-        hma_audios: audios,
-      },
+      updateData,
       { new: true }
     );
     
@@ -366,7 +391,8 @@ export class PacientesService {
       filename: mp3Filename,
       url: audioUrl,
       totalAudios: audios.length,
-      transcricao: transcricao?.substring(0, 50)
+      transcricao: transcricao?.substring(0, 50),
+      analisePersonalidade: analisePersonalidade ? analisePersonalidade.tipo : 'não analisada'
     });
 
     // Remover apenas arquivo WebM temporário
@@ -377,7 +403,10 @@ export class PacientesService {
       audioFilename: mp3Filename,
       transcricao,
       audios: updated.hma_audios,
-      message: 'Áudio convertido para MP3 e transcrito com sucesso.',
+      analise_personalidade: updated.analise_personalidade,
+      message: analisePersonalidade 
+        ? 'Áudio transcrito e personalidade analisada com sucesso!' 
+        : 'Áudio convertido para MP3 e transcrito com sucesso.',
     };
   }
 
@@ -514,15 +543,22 @@ export class PacientesService {
     
     console.log('✅ Análise de personalidade concluída:', analise);
 
-    // Opcional: Salvar análise no paciente
-    // paciente.analise_personalidade = analise;
-    // await paciente.save();
+    // Salvar análise no paciente
+    paciente.analise_personalidade = {
+      tipo: analise.tipo,
+      justificativa: analise.justificativa,
+      resposta: analise.resposta,
+      data_analise: new Date(),
+    };
+    await paciente.save();
+    
+    console.log('💾 Análise salva no CRM do paciente');
 
     return {
       pacienteId,
       pacienteNome: paciente.nome,
       ...analise,
-      timestamp: new Date().toISOString(),
+      data_analise: paciente.analise_personalidade.data_analise,
     };
   }
 
