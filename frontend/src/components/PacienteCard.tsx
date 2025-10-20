@@ -335,6 +335,13 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
     console.log('📁 Usando áudio existente:', ultimoAudio.filename)
     toast.info('🤖 Extraindo dados com IA...')
     const token = localStorage.getItem('token')
+    
+    if (!token) {
+      toast.error('❌ Token de autenticação não encontrado. Faça login novamente.')
+      return
+    }
+    
+    console.log('🔑 Token encontrado:', token.substring(0, 20) + '...')
 
     try {
       // NOVO: Chamar endpoint que usa audioFilename (não envia arquivo novamente)
@@ -376,8 +383,15 @@ export default function PacienteCard({ paciente: pacienteProp, isSearchMode = fa
           }, 100)
         }
       } else {
-        const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }))
-        toast.error(`Erro ao processar: ${errorData.message}`)
+        if (response.status === 401) {
+          toast.error('❌ Sessão expirada. Faça login novamente.')
+          console.error('🔒 Token inválido ou expirado')
+          // Opcional: redirecionar para login
+          // window.location.href = '/login'
+        } else {
+          const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }))
+          toast.error(`Erro ao processar: ${errorData.message}`)
+        }
       }
     } catch (error: any) {
       console.error('Erro ao processar áudio:', error)
